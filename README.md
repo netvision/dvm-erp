@@ -1,188 +1,372 @@
-# School Library Management System Backend
+# 🏫 School Library Management System# School Library Management System Backend
 
-A comprehensive Node.js + Express backend API for managing a school library system with PostgreSQL database, JWT authentication, and bcrypt password hashing.
 
-## Features
 
-### 🔐 Authentication & Authorization
-- JWT-based authentication
-- Role-based access control (Student, Teacher, Librarian, Admin)
-- bcrypt password hashing
-- Secure user registration and login
+A comprehensive digital library management system built with modern web technologies. This system provides separate management interfaces for books, digital resources, media, and equipment with a responsive design that works seamlessly across all devices.A comprehensive Node.js + Express backend API for managing a school library system with PostgreSQL database, JWT authentication, and bcrypt password hashing.
 
-### 📚 Book Management
-- Complete CRUD operations for books
-- Advanced search and filtering
-- ISBN validation
+
+
+## 🚀 Features## Features
+
+
+
+### 📚 Resource Management### 🔐 Authentication & Authorization
+
+- **Book Management**: Complete CRUD operations for physical books with ISBN tracking, genre categorization, and inventory management- JWT-based authentication
+
+- **Digital Library**: Manage e-books, PDFs, and online resources with external links and access controls- Role-based access control (Student, Teacher, Librarian, Admin)
+
+- **Media Library**: Handle DVDs, audiobooks, educational videos with detailed metadata- bcrypt password hashing
+
+- **Equipment Management**: Track projectors, laptops, tablets with check-out/in functionality and condition monitoring- Secure user registration and login
+
+
+
+### 👥 User Management### 📚 Book Management
+
+- **Role-based Authentication**: Admin, Librarian, and Student roles with JWT-based security- Complete CRUD operations for books
+
+- **Profile Management**: Users can update personal information and change passwords- Advanced search and filtering
+
+- **User Analytics**: Track user activity, borrowing patterns, and engagement metrics- ISBN validation
+
 - Availability tracking
-- Popular and recently added books
-- Book borrowing statistics
 
-### 👥 User Management
+### 📊 Analytics & Reporting- Popular and recently added books
+
+- **Real-time Dashboard**: Live statistics on borrowing, returns, popular items, and user activity- Book borrowing statistics
+
+- **Interactive Charts**: Visual representations of library usage patterns
+
+- **Export Functionality**: Generate reports in multiple formats### 👥 User Management
+
 - User registration and profile management
-- Role-based permissions
-- User statistics and reporting
-- Borrow history tracking
 
-### 📖 Borrowing System
+### 🎨 Modern UI/UX- Role-based permissions
+
+- **Responsive Design**: Mobile-first approach with seamless tablet and desktop experiences- User statistics and reporting
+
+- **Dark/Light Mode**: User preference-based theming- Borrow history tracking
+
+- **Intuitive Navigation**: Clean, modern interface with easy-to-use controls
+
+- **Real-time Notifications**: Instant feedback for user actions### 📖 Borrowing System
+
 - Book borrowing and returning
-- Due date management
+
+## 🛠️ Technology Stack- Due date management
+
 - Overdue tracking with fines
-- Renewal functionality
-- Borrowing statistics and reports
 
-### 🔖 Bookmark System
-- Save favorite books
-- Personal reading lists
-- Bookmark statistics
-- Popular bookmarked books
+### Frontend- Renewal functionality
 
-### 🎵 Media Management
-- Support for DVDs, CDs, digital content
-- Digital media access tracking
-- Media borrowing for physical items
-- Access statistics for digital content
+- **Vue.js 3** with Composition API- Borrowing statistics and reports
 
-## Tech Stack
+- **TypeScript** for type safety
+
+- **Tailwind CSS** for styling### 🔖 Bookmark System
+
+- **Pinia** for state management- Save favorite books
+
+- **Vue Router** for navigation- Personal reading lists
+
+- **Axios** for API communication- Bookmark statistics
+
+- **Vite** for build tooling- Popular bookmarked books
+
+
+
+### Backend### 🎵 Media Management
+
+- **Node.js** with Express.js- Support for DVDs, CDs, digital content
+
+- **PostgreSQL** database- Digital media access tracking
+
+- **JWT** authentication- Media borrowing for physical items
+
+- **bcrypt** for password hashing- Access statistics for digital content
+
+- **Winston** for logging
+
+- **CORS** enabled## Tech Stack
+
+- **Helmet** for security
 
 - **Runtime**: Node.js
-- **Framework**: Express.js
+
+## 📦 Installation- **Framework**: Express.js
+
 - **Database**: PostgreSQL
-- **Authentication**: JWT + bcrypt
-- **Validation**: Joi
-- **Logging**: Winston
-- **Security**: Helmet, CORS, Rate Limiting
 
-## Project Structure
+### Prerequisites- **Authentication**: JWT + bcrypt
 
-```
-src/
-├── controllers/          # Request handlers
+- Node.js (v16 or higher)- **Validation**: Joi
+
+- PostgreSQL (v12 or higher)- **Logging**: Winston
+
+- npm or yarn- **Security**: Helmet, CORS, Rate Limiting
+
+
+
+### 1. Clone the Repository## Project Structure
+
+```bash
+
+git clone https://github.com/yourusername/school-library-management.git```
+
+cd school-library-managementsrc/
+
+```├── controllers/          # Request handlers
+
 │   ├── authController.js
-│   ├── bookController.js
-│   ├── userController.js
-│   ├── borrowController.js
-│   ├── bookmarkController.js
+
+### 2. Backend Setup│   ├── bookController.js
+
+```bash│   ├── userController.js
+
+# Install backend dependencies│   ├── borrowController.js
+
+npm install│   ├── bookmarkController.js
+
 │   └── mediaController.js
-├── routes/              # API route definitions
-│   ├── authRoutes.js
-│   ├── bookRoutes.js
+
+# Set up environment variables├── routes/              # API route definitions
+
+cp .env.example .env│   ├── authRoutes.js
+
+# Edit .env with your database credentials│   ├── bookRoutes.js
+
 │   ├── userRoutes.js
-│   ├── borrowRoutes.js
-│   ├── bookmarkRoutes.js
-│   └── mediaRoutes.js
-├── middleware/          # Custom middleware
+
+# Set up PostgreSQL database│   ├── borrowRoutes.js
+
+psql -U postgres│   ├── bookmarkRoutes.js
+
+CREATE DATABASE dvm_erp;│   └── mediaRoutes.js
+
+\q├── middleware/          # Custom middleware
+
 │   ├── auth.js         # JWT authentication
-│   ├── errorHandler.js # Global error handling
-│   └── validation.js   # Request validation
+
+# Run database migrations│   ├── errorHandler.js # Global error handling
+
+node setup_database.js│   └── validation.js   # Request validation
+
 ├── models/             # Data models
-│   ├── User.js
-│   ├── Book.js
-│   ├── BorrowRecord.js
+
+# Start the backend server│   ├── User.js
+
+npm run dev│   ├── Book.js
+
+```│   ├── BorrowRecord.js
+
 │   ├── Bookmark.js
-│   └── Media.js
-├── config/             # Configuration
-│   └── database.js     # Database connection
-├── utils/              # Utilities
+
+### 3. Frontend Setup│   └── Media.js
+
+```bash├── config/             # Configuration
+
+# Navigate to frontend directory│   └── database.js     # Database connection
+
+cd frontend├── utils/              # Utilities
+
 │   └── logger.js       # Winston logger
-└── app.js              # Application entry point
+
+# Install frontend dependencies└── app.js              # Application entry point
+
+npm install
 
 database/
-├── schema.sql          # Database schema
-└── sample_data.sql     # Sample data for testing
-```
 
-## Quick Start
+# Start the development server├── schema.sql          # Database schema
 
-### Prerequisites
+npm run dev└── sample_data.sql     # Sample data for testing
+
+``````
+
+
+
+### 4. Access the Application## Quick Start
+
+- Frontend: http://localhost:5173
+
+- Backend API: http://localhost:3000### Prerequisites
+
+- Database: PostgreSQL on default port 5432
 
 - Node.js (v16 or higher)
-- PostgreSQL (v12 or higher)
+
+## 🔧 Configuration- PostgreSQL (v12 or higher)
+
 - npm or yarn
 
-### 1. Clone and Install
+### Environment Variables
 
-```bash
-git clone <repository-url>
-cd school-library-backend
-npm install
-```
+Create a `.env` file in the root directory:### 1. Clone and Install
 
-### 2. Database Setup
 
-Create a PostgreSQL database and run the schema:
 
-```bash
+```env```bash
+
+# Database Configurationgit clone <repository-url>
+
+DB_HOST=localhostcd school-library-backend
+
+DB_PORT=5432npm install
+
+DB_NAME=dvm_erp```
+
+DB_USER=postgres
+
+DB_PASSWORD=your_password### 2. Database Setup
+
+
+
+# JWT ConfigurationCreate a PostgreSQL database and run the schema:
+
+JWT_SECRET=your_jwt_secret_key
+
+JWT_EXPIRES_IN=7d```bash
+
 # Create database
-createdb school_library
 
-# Run schema
+# Server Configurationcreatedb school_library
+
+PORT=3000
+
+NODE_ENV=development# Run schema
+
 psql -d school_library -f database/schema.sql
 
-# Optional: Load sample data
-psql -d school_library -f database/sample_data.sql
+# CORS Configuration
+
+FRONTEND_URL=http://localhost:5173# Optional: Load sample data
+
+```psql -d school_library -f database/sample_data.sql
+
 ```
+
+## 🎯 Usage
 
 ### 3. Environment Configuration
 
-Create a `.env` file from the example:
+### Admin Features
 
-```bash
-cp .env.example .env
+1. **Dashboard**: Overview of library statistics and recent activitiesCreate a `.env` file from the example:
+
+2. **Resource Management**: Add, edit, delete books, digital resources, media, and equipment
+
+3. **User Management**: Manage user accounts, roles, and permissions```bash
+
+4. **Analytics**: View detailed reports and usage patternscp .env.example .env
+
 ```
 
-Update the `.env` file with your database credentials:
+### Student Features
 
-```env
-NODE_ENV=development
+1. **Browse Catalog**: Search and filter available resourcesUpdate the `.env` file with your database credentials:
+
+2. **Borrowing**: Request and manage borrowed items
+
+3. **Digital Access**: Access digital resources and online materials```env
+
+4. **Profile Management**: Update personal information and preferencesNODE_ENV=development
+
 PORT=3000
 
+## 🔐 Security Features
+
 DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=school_library
-DB_USER=postgres
-DB_PASSWORD=your_password
+
+- **JWT Authentication**: Secure token-based authenticationDB_PORT=5432
+
+- **Password Hashing**: bcrypt with salt rounds for secure password storageDB_NAME=school_library
+
+- **Role-based Access Control**: Different permission levels for different user typesDB_USER=postgres
+
+- **Input Validation**: Comprehensive server-side validationDB_PASSWORD=your_password
+
+- **SQL Injection Prevention**: Parameterized queries and ORM protection
 
 JWT_SECRET=your-super-secret-jwt-key
-JWT_EXPIRES_IN=24h
+
+## 📱 Mobile ResponsivenessJWT_EXPIRES_IN=24h
+
 ```
 
-### 4. Start the Server
+The application is fully responsive and provides an optimal experience on:
 
-```bash
+- **Mobile Phones**: Compact interface with touch-friendly controls### 4. Start the Server
+
+- **Tablets**: Adapted layout for medium screens
+
+- **Desktops**: Full-featured interface with advanced functionality```bash
+
 # Development mode (with nodemon)
-npm run dev
 
-# Production mode
-npm start
-```
+## 🚦 Development Statusnpm run dev
 
-The server will start on `http://localhost:3000`
 
-## API Documentation
 
-### Authentication Endpoints
+- ✅ **Complete**: Book Management, User Authentication, Profile Management# Production mode
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| POST | `/api/auth/register` | Register new user | Public |
-| POST | `/api/auth/login` | Login user | Public |
+- 🔄 **In Progress**: Digital Library and Media Management fine-tuningnpm start
+
+- 📋 **Planned**: Advanced reporting, notification system```
+
+
+
+## 📝 API DocumentationThe server will start on `http://localhost:3000`
+
+
+
+The API is RESTful and includes endpoints for:## API Documentation
+
+- Authentication (`/api/auth/*`)
+
+- Books (`/api/books/*`)### Authentication Endpoints
+
+- Digital Resources (`/api/library/digital-resources/*`)
+
+- Media Resources (`/api/library/media-resources/*`)| Method | Endpoint | Description | Access |
+
+- Equipment (`/api/library/equipment/*`)|--------|----------|-------------|--------|
+
+- Users (`/api/users/*`)| POST | `/api/auth/register` | Register new user | Public |
+
+- Analytics (`/api/library/analytics/*`)| POST | `/api/auth/login` | Login user | Public |
+
 | GET | `/api/auth/profile` | Get user profile | Authenticated |
-| PUT | `/api/auth/profile` | Update profile | Authenticated |
+
+## 🤝 Contributing| PUT | `/api/auth/profile` | Update profile | Authenticated |
+
 | PUT | `/api/auth/change-password` | Change password | Authenticated |
 
-### Book Endpoints
+1. Fork the repository
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)### Book Endpoints
+
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+
+4. Push to the branch (`git push origin feature/amazing-feature`)| Method | Endpoint | Description | Access |
+
+5. Open a Pull Request|--------|----------|-------------|--------|
+
 | GET | `/api/books` | Get all books | Public |
-| GET | `/api/books/:id` | Get book by ID | Authenticated |
+
+## 📄 License| GET | `/api/books/:id` | Get book by ID | Authenticated |
+
 | POST | `/api/books` | Create book | Librarian/Admin |
-| PUT | `/api/books/:id` | Update book | Librarian/Admin |
+
+This project is licensed under the MIT License.| PUT | `/api/books/:id` | Update book | Librarian/Admin |
+
 | DELETE | `/api/books/:id` | Delete book | Librarian/Admin |
+
+---
 
 ### Borrowing Endpoints
 
+**Made with ❤️ for educational institutions worldwide**
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
 | POST | `/api/borrow` | Borrow a book | Authenticated |
