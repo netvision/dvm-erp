@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Custom CSS for additional styling */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
