@@ -42,6 +42,10 @@ sudo apt install nginx -y
 chmod +x scripts/setup-production-database.sh
 ./scripts/setup-production-database.sh
 
+DB_NAME=dvm_erp_prod
+DB_USER=dvm_user
+DB_PASSWORD=72V5E+2VDZRGMVHO2jWxo8qYC25CM/WeY9URcALsu7g=
+
 # This will create the database, user, and .env file
 # Save the generated credentials that are displayed!
 ```
