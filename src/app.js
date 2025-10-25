@@ -45,14 +45,20 @@ app.use(helmet({
   },
   crossOriginResourcePolicy: { policy: "cross-origin" } // Allow cross-origin requests for media
 }));
+// CORS Configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173', 
+  'http://localhost:5174',
+  process.env.FRONTEND_URL,
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:5173', 
-    'http://localhost:5174',
-    process.env.CORS_ORIGIN
-  ].filter(Boolean),
-  credentials: true
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Rate limiting
