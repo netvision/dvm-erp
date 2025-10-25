@@ -584,7 +584,7 @@ const getProgressPercentage = (): number => {
 }
 
 const getActivityIcon = (type: string) => {
-  const icons = {
+  const icons: Record<string, any> = {
     borrow: BookOpenIcon,
     download: DocumentIcon,
     bookmark: HeartIcon,
@@ -594,7 +594,7 @@ const getActivityIcon = (type: string) => {
 }
 
 const getActivityStyle = (type: string): string => {
-  const styles = {
+  const styles: Record<string, string> = {
     borrow: 'bg-blue-100 text-blue-600',
     download: 'bg-green-100 text-green-600',
     bookmark: 'bg-pink-100 text-pink-600',
