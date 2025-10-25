@@ -38,11 +38,12 @@ sudo apt install nginx -y
 ### 2. Database Setup
 
 ```bash
-# Run the database setup script
-chmod +x scripts/setup-database.sh
-./scripts/setup-database.sh
+# Run the production database setup script
+chmod +x scripts/setup-production-database.sh
+./scripts/setup-production-database.sh
 
-# Save the generated credentials!
+# This will create the database, user, and .env file
+# Save the generated credentials that are displayed!
 ```
 
 ### 3. Deploy Backend Application
@@ -88,11 +89,11 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 6. Setup Database Schema
+### 6. Run Database Migrations
 
 ```bash
 cd /var/www/dvm-erp
-node setup_database.js
+node scripts/migrate-database.js
 ```
 
 ### 7. Start Application

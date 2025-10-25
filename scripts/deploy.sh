@@ -42,8 +42,14 @@ if [ ! -f ".env" ]; then
 fi
 
 echo "🗄️  Setting up database..."
-# Note: Ensure PostgreSQL is running and database exists
-echo "Make sure your PostgreSQL database is set up and .env is configured!"
+# Run database migrations
+if [ -f ".env" ]; then
+    echo "Running database migrations..."
+    node scripts/migrate-database.js
+else
+    echo "⚠️  .env file not found! Please run setup-production-database.sh first"
+    echo "Then run: node scripts/migrate-database.js"
+fi
 
 echo "🏗️  Building application (if needed)..."
 # Add any build steps here if required
