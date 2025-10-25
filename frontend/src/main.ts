@@ -8,7 +8,8 @@ import router from './router'
 import { useAuthStore } from './stores/auth'
 
 // Configure Axios defaults
-axios.defaults.baseURL = 'http://localhost:3000/api' // Backend API URL
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+axios.defaults.baseURL = `${apiBaseUrl}/api`
 axios.defaults.headers.common['Content-Type'] = 'application/json'
 
 const app = createApp(App)
