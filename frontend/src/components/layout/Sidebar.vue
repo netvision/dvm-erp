@@ -1,8 +1,17 @@
 <template>
   <div class="h-full bg-white shadow-sm border-r border-gray-200">
     <div class="flex flex-col h-full">
+      <!-- School Logo and Name -->
+      <div class="flex items-center px-4 py-5 border-b border-gray-200">
+        <img src="@/assets/dvm-logo.png" alt="DVM Logo" class="h-12 w-12 object-contain" />
+        <div class="ml-3">
+          <h1 class="text-lg font-bold text-gray-900">DVM Library</h1>
+          <p class="text-xs text-gray-500">Dalmia Vidya Mandir, Chirawa</p>
+        </div>
+      </div>
+
       <!-- Navigation -->
-      <nav class="flex-1 px-4 py-6 space-y-1">
+      <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         <!-- Student Navigation -->
         <template v-if="authStore.isStudent">
           <div class="space-y-1">

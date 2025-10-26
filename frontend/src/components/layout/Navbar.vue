@@ -5,8 +5,11 @@
         <div class="flex items-center">
           <!-- Logo -->
           <div class="flex-shrink-0 flex items-center">
-            <BookOpenIcon class="h-8 w-8 text-blue-600" />
-            <span class="ml-2 text-xl font-bold text-gray-900">School Library</span>
+            <img src="@/assets/dvm-logo.png" alt="DVM Logo" class="h-8 w-8 object-contain" />
+            <div class="ml-2">
+              <span class="text-lg font-bold text-gray-900">DVM Library</span>
+              <span class="hidden lg:inline text-xs text-gray-500 ml-2">Dalmia Vidya Mandir, Chirawa</span>
+            </div>
           </div>
 
           <!-- Navigation Links -->
@@ -324,7 +327,6 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { 
-  BookOpenIcon, 
   ChevronDownIcon, 
   Bars3Icon, 
   XMarkIcon 

@@ -1,19 +1,27 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
       <div>
-        <div class="mx-auto h-12 w-12 flex items-center justify-center">
-          <BookOpenIcon class="h-12 w-12 text-blue-600" />
+        <div class="mx-auto flex items-center justify-center">
+          <img src="@/assets/dvm-logo.png" alt="DVM Logo" class="h-20 w-20 object-contain" />
         </div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
+          Dalmia Vidya Mandir
         </h2>
-        <p class="mt-2 text-center text-sm text-gray-600">
-          School Library Management System
+        <p class="mt-2 text-center text-lg font-medium text-gray-700">
+          Chirawa
+        </p>
+        <p class="mt-4 text-center text-sm text-gray-600">
+          Library Management System
         </p>
       </div>
       
-      <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
+      <div class="bg-white py-8 px-6 shadow-xl rounded-lg">
+        <h3 class="text-center text-xl font-semibold text-gray-900 mb-6">
+          Sign in to your account
+        </h3>
+        
+        <form class="space-y-6" @submit.prevent="handleSubmit">
         <div v-if="error" class="rounded-md bg-red-50 p-4">
           <div class="flex">
             <div class="flex-shrink-0">
@@ -99,11 +107,12 @@
           </p>
         </div>
       </form>
+      </div>
 
       <!-- Demo Credentials -->
-      <div class="mt-8 p-4 bg-blue-50 rounded-md">
-        <h3 class="text-sm font-medium text-blue-800 mb-2">Demo Credentials:</h3>
-        <div class="text-xs text-blue-700 space-y-1">
+      <div class="mt-6 p-4 bg-white/70 backdrop-blur rounded-lg shadow">
+        <h3 class="text-sm font-medium text-gray-800 mb-2">Demo Credentials:</h3>
+        <div class="text-xs text-gray-700 space-y-1">
           <div>Student: john.doe@email.com / password123</div>
           <div>Librarian: jane.smith@email.com / password123</div>
           <div>Admin: admin@school.edu / admin123</div>
@@ -116,7 +125,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { BookOpenIcon, LockClosedIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
+import { LockClosedIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import { useAuthStore } from '@/stores/auth'
 import type { LoginCredentials } from '@/types'
 
