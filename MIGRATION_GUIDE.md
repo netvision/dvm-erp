@@ -4,9 +4,32 @@
 
 **Problem**: The production database is missing the `employee_id` column in the `users` table, causing 500 errors when users try to update their profiles.
 
-**Solution**: Run the migration script: `database/add_employee_id_column.sql`
+**Solution**: Run the migration script using one of the methods below.
 
-### Quick Fix - Run This SQL on Production:
+### Method 1: Node.js Script (Recommended) ⭐
+
+This is the easiest method if you have Node.js and npm installed on your server.
+
+```bash
+# 1. SSH to your server and navigate to project directory
+cd /var/www/dvm-erp
+
+# 2. Pull latest changes
+git pull origin main
+
+# 3. Run the migration script
+node database/add_employee_id_migration.js
+```
+
+The script will:
+- Check if the column already exists (safe to run multiple times)
+- Add the employee_id column if missing
+- Create the necessary index
+- Show detailed progress and error messages
+
+### Method 2: Direct SQL
+
+If you prefer to run SQL directly:
 
 ```sql
 DO $$ 
@@ -27,6 +50,11 @@ BEGIN
         RAISE NOTICE 'Column employee_id already exists';
     END IF;
 END $$;
+```
+
+Using psql command:
+```bash
+psql -h localhost -U your_db_user -d school_library -f database/add_employee_id_column.sql
 ```
 
 ---
