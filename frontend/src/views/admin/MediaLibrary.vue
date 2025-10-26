@@ -200,14 +200,23 @@
               <div class="flex items-center justify-between mt-4">
                 <div class="flex space-x-2">
                   <button
+                    @click="viewMedia(resource)"
+                    class="text-blue-600 hover:text-blue-800 p-1 rounded-lg hover:bg-blue-50 transition-colors"
+                    title="View Media"
+                  >
+                    <EyeIcon class="w-4 h-4" />
+                  </button>
+                  <button
                     @click="editResource(resource)"
                     class="text-green-600 hover:text-green-800 p-1 rounded-lg hover:bg-green-50 transition-colors"
+                    title="Edit Resource"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="deleteResource(resource)"
                     class="text-red-600 hover:text-red-800 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                    title="Delete Resource"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -423,6 +432,115 @@
       </div>
     </div>
   </div>
+
+  <!-- Media Viewer Modal -->
+  <div v-if="showViewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8);" @click="closeViewModal">
+    <div class="bg-white rounded-lg w-full max-w-6xl max-h-screen overflow-auto" @click.stop>
+      <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">
+            {{ viewingResource?.title }}
+          </h3>
+          <button 
+            @click="closeViewModal"
+            class="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <span class="sr-only">Close</span>
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div class="mt-2">
+          <!-- Video Player -->
+          <div v-if="viewingResource?.media_type === 'video'" class="w-full">
+            <video 
+              v-if="getMediaUrl(viewingResource)"
+              :src="getMediaUrl(viewingResource)" 
+              controls 
+              class="w-full rounded-lg shadow-lg" 
+              style="max-height: 500px;"
+              preload="metadata"
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+
+          <!-- Audio Player -->
+          <div v-else-if="viewingResource?.media_type === 'audio'" class="w-full">
+            <div class="bg-gray-50 rounded-lg p-8 flex flex-col items-center">
+              <div class="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6">
+                <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+              </div>
+              <audio 
+                v-if="getMediaUrl(viewingResource)"
+                :src="getMediaUrl(viewingResource)" 
+                controls 
+                class="w-full max-w-md"
+                preload="metadata"
+              >
+                Your browser does not support the audio tag.
+              </audio>
+            </div>
+          </div>
+
+          <!-- Presentation/Interactive Content -->
+          <div v-else-if="viewingResource?.media_type === 'presentation' || viewingResource?.media_type === 'interactive'" class="w-full">
+            <iframe 
+              v-if="getMediaUrl(viewingResource)"
+              :src="getMediaUrl(viewingResource)"
+              class="w-full border-0 rounded-lg shadow-lg"
+              style="height: 600px;"
+              title="Media Viewer"
+            ></iframe>
+          </div>
+
+          <!-- External URL -->
+          <div v-else-if="viewingResource?.url" class="w-full">
+            <iframe 
+              :src="viewingResource.url"
+              class="w-full border-0 rounded-lg shadow-lg"
+              style="height: 600px;"
+              title="External Media Viewer"
+            ></iframe>
+          </div>
+
+          <!-- Fallback for unsupported formats -->
+          <div v-else class="text-center py-12">
+            <div class="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 00-2.828-2.828z"></path>
+              </svg>
+            </div>
+            <p class="text-gray-500 mb-4">Preview not available for this media type.</p>
+            <p class="text-sm text-gray-400 mb-6">{{ viewingResource?.description || 'No description available.' }}</p>
+            <button 
+              v-if="getMediaUrl(viewingResource)"
+              @click="downloadMedia(viewingResource!)"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <svg class="-ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download Media
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end">
+          <button 
+            @click="closeViewModal"
+            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -437,7 +555,8 @@ import {
   VideoCameraIcon,
   SpeakerWaveIcon,
   CursorArrowRaysIcon,
-  PlayIcon
+  PlayIcon,
+  EyeIcon
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -485,6 +604,10 @@ const fileInput = ref<HTMLInputElement | null>(null)
 
 // AI Description Generation
 const generatingDescription = ref(false)
+
+// Media Viewer data
+const showViewModal = ref(false)
+const viewingResource = ref<MediaResource | null>(null)
 
 // Form data
 const resourceForm = ref({
@@ -830,6 +953,65 @@ const closeModal = () => {
   isDragOver.value = false
   if (fileInput.value) {
     fileInput.value.value = ''
+  }
+}
+
+// Media viewer functions
+const viewMedia = (resource: MediaResource) => {
+  viewingResource.value = resource
+  showViewModal.value = true
+}
+
+const closeViewModal = () => {
+  showViewModal.value = false
+  viewingResource.value = null
+}
+
+const getMediaUrl = (resource: MediaResource | null): string => {
+  if (!resource) return ''
+  
+  // If it has a URL, use it directly
+  if (resource.url) {
+    return resource.url
+  }
+  
+  // If it has a file_path, construct the URL
+  if (resource.file_path) {
+    return `${API_BASE_URL}/uploads/${resource.file_path}`
+  }
+  
+  return ''
+}
+
+const downloadMedia = async (resource: MediaResource) => {
+  try {
+    const mediaUrl = getMediaUrl(resource)
+    if (!mediaUrl) {
+      alert('No media file available for download')
+      return
+    }
+    
+    // For external URLs, open in new tab
+    if (resource.url) {
+      window.open(resource.url, '_blank')
+      return
+    }
+    
+    // For uploaded files, trigger download
+    const response = await fetch(mediaUrl)
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    
+    const a = document.createElement('a')
+    a.href = url
+    a.download = resource.title || 'media-file'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Error downloading media:', error)
+    alert('Error downloading media file')
   }
 }
 
