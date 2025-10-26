@@ -17,6 +17,3 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'NOT SET'
 const environment = import.meta.env.VITE_APP_ENV || 'NOT SET'
 const mode = import.meta.env.MODE || 'NOT SET'
 </script>
-</template>
-
-<parameter name="newString">
