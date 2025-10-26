@@ -341,7 +341,19 @@ class DigitalResourceController {
             // Set appropriate headers
             const safeFilename = resource.title.replace(/[^\w\s.-]/g, '_');
             res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.${resource.format}"`);
-            res.setHeader('Content-Type', 'application/octet-stream');
+            
+            // Set proper content type based on format
+            const mimeTypes = {
+                'pdf': 'application/pdf',
+                'epub': 'application/epub+zip',
+                'mobi': 'application/x-mobipocket-ebook',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'doc': 'application/msword',
+                'txt': 'text/plain',
+                'html': 'text/html'
+            };
+            const contentType = mimeTypes[resource.format.toLowerCase()] || 'application/octet-stream';
+            res.setHeader('Content-Type', contentType);
 
             // Send file - ensure absolute path
             const absolutePath = path.resolve(filePath);
