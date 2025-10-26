@@ -19,7 +19,7 @@
           </div>
         </div>
 
-        <!-- Statistics Cards -->
+        <!-- Enhanced Digital Library Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
           <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div class="flex items-center justify-between">
