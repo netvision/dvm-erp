@@ -535,10 +535,10 @@ class DigitalResourceController {
                     title, author, type, format, file_path, file_size_bytes,
                     publisher, publication_date, language, genre, subjects,
                     keywords, description, content_rating, reading_level,
-                    access_level, is_drm_protected, uploaded_by
+                    access_level, is_drm_protected
                 ) VALUES (
                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-                    $12, $13, $14, $15, $16, $17, $18
+                    $12, $13, $14, $15, $16, $17
                 ) RETURNING *
             `;
 
@@ -546,7 +546,7 @@ class DigitalResourceController {
                 title, author, type, format, file_path, file_size_bytes,
                 publisher, publication_date, language, genre, subjects,
                 keywords, description, content_rating, reading_level,
-                accessLevel, is_drm_protected, req.user?.id
+                accessLevel, is_drm_protected
             ];
 
             console.log('🔍 INSERT VALUES:', values);
@@ -882,7 +882,7 @@ class DigitalResourceController {
             const {
                 title,
                 description = '',
-                category = 'General',
+                genre = 'General',
                 access_level = 'all',
                 language = 'English',
                 keywords = ''
@@ -907,9 +907,9 @@ class DigitalResourceController {
             // Insert resource into database
             const insertQuery = `
                 INSERT INTO digital_resources (
-                    title, description, type, format, file_path, file_size, 
-                    genre, language, access_level, keywords, uploaded_by, created_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+                    title, description, type, format, file_path, file_size_bytes, 
+                    genre, language, access_level, keywords, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
                 RETURNING *
             `;
 
@@ -920,11 +920,10 @@ class DigitalResourceController {
                 fileExtension.toUpperCase(),
                 fileName,
                 fileSize,
-                category,
+                genre,
                 language,
                 access_level,
-                keywords,
-                req.user.id
+                keywords
             ]);
 
             res.status(201).json({
@@ -1067,8 +1066,8 @@ class DigitalResourceController {
             const insertQuery = `
                 INSERT INTO digital_resources (
                     title, author, type, format, genre, description, file_path, file_size_bytes,
-                    language, access_level, uploaded_by, created_at, updated_at, is_active
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), true)
+                    language, access_level, created_at, updated_at, is_active
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW(), true)
                 RETURNING *
             `;
 
@@ -1082,8 +1081,7 @@ class DigitalResourceController {
                 fileName, // Store just the filename
                 fileSize, // Store as number for file_size_bytes
                 language,
-                access_level,
-                req.user?.id || null
+                access_level
             ]);
 
             res.status(201).json({
