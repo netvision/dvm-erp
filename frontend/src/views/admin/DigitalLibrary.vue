@@ -652,9 +652,6 @@
         </div>
       </div>
   </div>
-
-  <!-- Debug Environment Info -->
-  <EnvironmentDebug />
 </div>
 </template><script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
@@ -671,7 +668,6 @@ import {
   GlobeAltIcon
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import EnvironmentDebug from '@/components/debug/EnvironmentDebug.vue'
 import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 
