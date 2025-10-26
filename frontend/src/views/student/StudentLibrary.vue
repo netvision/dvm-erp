@@ -208,10 +208,15 @@ const downloadResource = async (resource: any) => {
     const link = document.createElement('a')
     link.href = url
     
-    // Use proper filename with extension
-    const filename = resource.title.includes('.') 
-      ? resource.title 
-      : `${resource.title}.${resource.format || 'pdf'}`
+    // Extract filename from Content-Disposition header or use fallback
+    let filename = `${resource.title}.${resource.format || 'pdf'}`
+    const contentDisposition = response.headers['content-disposition']
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/)
+      if (filenameMatch) {
+        filename = filenameMatch[1]
+      }
+    }
     link.download = filename
     
     document.body.appendChild(link)
