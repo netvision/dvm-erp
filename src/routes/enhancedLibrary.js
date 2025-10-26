@@ -92,6 +92,24 @@ router.get('/digital-resources/:id/view', authenticateToken, digitalResourceCont
 router.post('/digital-resources/:id/track-view', authenticateToken, digitalResourceController.trackView);
 router.post('/digital-resources/:id/track-download', authenticateToken, digitalResourceController.trackDownload);
 router.post('/digital-resources', authenticateToken, requireRole(['admin', 'librarian']), digitalResourceController.create);
+
+// Handle preflight requests for file uploads
+router.options('/digital-resources/upload', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
+
+router.options('/digital-resources/:id/upload', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'PUT, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
+
 router.post('/digital-resources/upload', authenticateToken, requireRole(['admin', 'librarian']), upload.single('file'), digitalResourceController.createWithUpload);
 router.put('/digital-resources/:id', authenticateToken, requireRole(['admin', 'librarian']), digitalResourceController.update);
 router.put('/digital-resources/:id/upload', authenticateToken, requireRole(['admin', 'librarian']), upload.single('file'), digitalResourceController.updateWithUpload);

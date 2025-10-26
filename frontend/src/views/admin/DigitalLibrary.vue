@@ -443,7 +443,7 @@
                       class="hidden"
                     />
                     <div 
-                      @click="$refs.fileInput?.click()"
+                      @click="fileInput?.click()"
                       @dragover.prevent="isDragOver = true"
                       @dragleave.prevent="isDragOver = false"
                       @drop.prevent="handleFileDrop"
@@ -744,7 +744,9 @@ const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
     const file = target.files[0]
-    validateAndSetFile(file)
+    if (file) {
+      validateAndSetFile(file)
+    }
   }
 }
 
@@ -752,7 +754,9 @@ const handleFileDrop = (event: DragEvent) => {
   isDragOver.value = false
   if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
     const file = event.dataTransfer.files[0]
-    validateAndSetFile(file)
+    if (file) {
+      validateAndSetFile(file)
+    }
   }
 }
 
