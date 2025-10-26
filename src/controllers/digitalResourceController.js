@@ -340,7 +340,7 @@ class DigitalResourceController {
 
             // Set appropriate headers
             const safeFilename = resource.title.replace(/[^\w\s.-]/g, '_');
-            res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.${resource.format}"`);
+            console.log('📄 Resource format:', resource.format);
             
             // Set proper content type based on format
             const mimeTypes = {
@@ -353,7 +353,12 @@ class DigitalResourceController {
                 'html': 'text/html'
             };
             const contentType = mimeTypes[resource.format.toLowerCase()] || 'application/octet-stream';
+            console.log('🎯 Setting Content-Type:', contentType);
+            
             res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.${resource.format}"`);
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('X-Content-Type-Options', 'nosniff');
 
             // Send file - ensure absolute path
             const absolutePath = path.resolve(filePath);
