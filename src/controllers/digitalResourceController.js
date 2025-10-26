@@ -364,20 +364,35 @@ class DigitalResourceController {
             const absolutePath = path.resolve(filePath);
             console.log('📁 Sending file from:', absolutePath);
             
-            res.sendFile(absolutePath, (err) => {
-                if (err) {
-                    console.error('❌ Error sending file:', err);
-                    if (!res.headersSent) {
-                        res.status(404).json({
-                            success: false,
-                            message: 'Error sending file',
-                            error: err.message
-                        });
-                    }
-                } else {
-                    console.log('✅ File sent successfully');
+            // Try alternative approach: read and pipe the file
+            const fs = require('fs');
+            if (!fs.existsSync(absolutePath)) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'File not found'
+                });
+            }
+            
+            const stat = fs.statSync(absolutePath);
+            res.setHeader('Content-Length', stat.size);
+            
+            const readStream = fs.createReadStream(absolutePath);
+            readStream.on('error', (err) => {
+                console.error('❌ Error reading file:', err);
+                if (!res.headersSent) {
+                    res.status(500).json({
+                        success: false,
+                        message: 'Error reading file',
+                        error: err.message
+                    });
                 }
             });
+            
+            readStream.on('end', () => {
+                console.log('✅ File sent successfully');
+            });
+            
+            readStream.pipe(res);
         } catch (error) {
             console.error('Error downloading digital resource:', error);
             res.status(500).json({
