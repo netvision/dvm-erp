@@ -1047,6 +1047,9 @@ class DigitalResourceController {
                 access_level = 'all',
                 language = 'English'
             } = req.body;
+            
+            // Map category to genre (database uses genre field)
+            const genre = category;
 
             if (!title || !type || !format) {
                 return res.status(400).json({
@@ -1063,7 +1066,7 @@ class DigitalResourceController {
             // Insert resource into database
             const insertQuery = `
                 INSERT INTO digital_resources (
-                    title, author, type, format, category, description, file_path, file_size,
+                    title, author, type, format, genre, description, file_path, file_size_bytes,
                     language, access_level, uploaded_by, created_at, updated_at, is_active
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), true)
                 RETURNING *
@@ -1074,10 +1077,10 @@ class DigitalResourceController {
                 author || null,
                 type,
                 format,
-                category || null,
+                genre || null,
                 description,
                 fileName, // Store just the filename
-                fileSize.toString(),
+                fileSize, // Store as number for file_size_bytes
                 language,
                 access_level,
                 req.user?.id || null
@@ -1124,6 +1127,9 @@ class DigitalResourceController {
                 access_level = 'all',
                 language = 'English'
             } = req.body;
+            
+            // Map category to genre (database uses genre field)
+            const genre = category;
 
             if (!title || !type || !format) {
                 return res.status(400).json({
@@ -1165,8 +1171,8 @@ class DigitalResourceController {
             queryParams.push(format);
             paramIndex++;
 
-            updateFields.push(`category = $${paramIndex}`);
-            queryParams.push(category || null);
+            updateFields.push(`genre = $${paramIndex}`);
+            queryParams.push(genre || null);
             paramIndex++;
 
             updateFields.push(`description = $${paramIndex}`);
@@ -1186,7 +1192,7 @@ class DigitalResourceController {
                 queryParams.push(fileName);
                 paramIndex++;
 
-                updateFields.push(`file_size = $${paramIndex}`);
+                updateFields.push(`file_size_bytes = $${paramIndex}`);
                 queryParams.push(fileSize);
                 paramIndex++;
             }
