@@ -1140,6 +1140,8 @@ const downloadResource = async (resource: DigitalResource) => {
 }
 
 const editResource = (resource: DigitalResource) => {
+  console.log('📝 Editing resource:', resource)
+  
   resourceForm.value = {
     id: resource.id,
     title: resource.title,
@@ -1151,6 +1153,16 @@ const editResource = (resource: DigitalResource) => {
     file_size: resource.file_size || '',
     description: resource.description || ''
   }
+  
+  console.log('📋 Form populated with:', resourceForm.value)
+  
+  // Set upload method based on whether resource has a URL
+  uploadMethod.value = resource.url ? 'url' : 'file'
+  
+  // Clear any selected file from previous operations
+  selectedFile.value = null
+  uploadProgress.value = 0
+  
   showEditModal.value = true
 }
 
