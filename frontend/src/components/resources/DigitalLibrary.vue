@@ -350,8 +350,9 @@ const downloadResource = async (resource: any) => {
       responseType: 'blob'
     })
     
-    // Create blob URL and download
-    const blob = new Blob([response.data])
+    // Create blob URL and download with correct MIME type
+    const contentType = response.headers['content-type'] || 'application/pdf'
+    const blob = new Blob([response.data], { type: contentType })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
