@@ -60,11 +60,23 @@
           <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-purple-100 text-sm">Online Databases</p>
-                <p class="text-2xl font-bold text-white">{{ databaseCount }}</p>
+                <p class="text-purple-100 text-sm">Journals & Articles</p>
+                <p class="text-2xl font-bold text-white">{{ journalCount }}</p>
               </div>
               <div class="p-2 bg-white/20 rounded-lg">
-                <GlobeAltIcon class="w-6 h-6 text-white" />
+                <DocumentIcon class="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-purple-100 text-sm">Research & Thesis</p>
+                <p class="text-2xl font-bold text-white">{{ researchCount }}</p>
+              </div>
+              <div class="p-2 bg-white/20 rounded-lg">
+                <DocumentIcon class="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
@@ -180,7 +192,7 @@
                   <div class="flex items-center">
                     <div class="flex-shrink-0 h-10 w-10">
                       <div class="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <component :is="getResourceIcon(resource.digital_type)" class="w-5 h-5 text-purple-600" />
+                        <component :is="getResourceIcon(resource.type)" class="w-5 h-5 text-purple-600" />
                       </div>
                     </div>
                     <div class="ml-4">
@@ -191,23 +203,31 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                        :class="getTypeColorClass(resource.digital_type)">
-                    {{ resource.digital_type }}
+                        :class="getTypeColorClass(resource.type)">
+                    {{ resource.type }}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ resource.category }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span v-if="resource.url" class="text-purple-600 hover:text-purple-800 cursor-pointer" @click="openResource(resource)">
-                    <GlobeAltIcon class="w-4 h-4 inline mr-1" />
-                    Open
-                  </span>
-                  <span v-else-if="resource.file_path" class="text-blue-600 hover:text-blue-800 cursor-pointer" @click="downloadResource(resource)">
-                    <DocumentArrowDownIcon class="w-4 h-4 inline mr-1" />
-                    Download
-                  </span>
+                  <div v-if="resource.url" class="flex space-x-2">
+                    <span class="text-purple-600 hover:text-purple-800 cursor-pointer" @click="openResource(resource)">
+                      <GlobeAltIcon class="w-4 h-4 inline mr-1" />
+                      Open
+                    </span>
+                  </div>
+                  <div v-else-if="resource.file_path" class="flex space-x-2">
+                    <span v-if="resource.type === 'pdf'" class="text-green-600 hover:text-green-800 cursor-pointer" @click="viewResource(resource)">
+                      <DocumentTextIcon class="w-4 h-4 inline mr-1" />
+                      View
+                    </span>
+                    <span class="text-blue-600 hover:text-blue-800 cursor-pointer" @click="downloadResource(resource)">
+                      <DocumentArrowDownIcon class="w-4 h-4 inline mr-1" />
+                      Download
+                    </span>
+                  </div>
                   <span v-else class="text-gray-400">No Access</span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ resource.file_size || 'N/A' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatFileSize(resource.file_size) }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(resource.created_at) }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div class="flex items-center space-x-2">
@@ -334,16 +354,32 @@
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Type *</label>
                   <select
-                    v-model="resourceForm.digital_type"
+                    v-model="resourceForm.type"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   >
                     <option value="">Select Type</option>
-                    <option value="e-book">E-Book</option>
+                    <option value="ebook">E-Book</option>
                     <option value="pdf">PDF Document</option>
-                    <option value="database">Online Database</option>
                     <option value="journal">Digital Journal</option>
-                    <option value="research">Research Paper</option>
+                    <option value="article">Article</option>
+                    <option value="research_paper">Research Paper</option>
+                    <option value="thesis">Thesis</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Format *</label>
+                  <select
+                    v-model="resourceForm.format"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="">Select Format</option>
+                    <option value="pdf">PDF</option>
+                    <option value="epub">EPUB</option>
+                    <option value="mobi">MOBI</option>
+                    <option value="docx">DOCX</option>
+                    <option value="html">HTML</option>
                   </select>
                 </div>
                 <div>
@@ -412,9 +448,11 @@
               </button>
               <button
                 type="submit"
-                class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                :disabled="savingResource"
+                class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                {{ showAddModal ? 'Add Resource' : 'Update Resource' }}
+                <LoadingSpinner v-if="savingResource" class="w-4 h-4 mr-2" />
+                {{ savingResource ? 'Saving...' : (showAddModal ? 'Add Resource' : 'Update Resource') }}
               </button>
             </div>
           </form>
@@ -446,7 +484,8 @@ interface DigitalResource {
   id: number
   title: string
   author?: string
-  digital_type: string
+  type: string
+  format: string
   category?: string
   url?: string
   file_path?: string
@@ -466,13 +505,15 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const showAddModal = ref(false)
 const showEditModal = ref(false)
+const savingResource = ref(false)
 
 // Form data
 const resourceForm = ref({
   id: null as number | null,
   title: '',
   author: '',
-  digital_type: '',
+  type: '',
+  format: '',
   category: '',
   url: '',
   file_size: '',
@@ -481,9 +522,10 @@ const resourceForm = ref({
 
 // Computed properties
 const totalDigitalResources = computed(() => digitalResources.value.length)
-const eBookCount = computed(() => digitalResources.value.filter(r => r.digital_type === 'e-book').length)
-const pdfCount = computed(() => digitalResources.value.filter(r => r.digital_type === 'pdf').length)
-const databaseCount = computed(() => digitalResources.value.filter(r => r.digital_type === 'database').length)
+const eBookCount = computed(() => digitalResources.value.filter(r => r.type === 'ebook').length)
+const pdfCount = computed(() => digitalResources.value.filter(r => r.type === 'pdf').length)
+const journalCount = computed(() => digitalResources.value.filter(r => ['journal', 'article'].includes(r.type)).length)
+const researchCount = computed(() => digitalResources.value.filter(r => ['research_paper', 'thesis'].includes(r.type)).length)
 
 const filteredResources = computed(() => {
   let filtered = digitalResources.value
@@ -493,12 +535,13 @@ const filteredResources = computed(() => {
     filtered = filtered.filter(resource => 
       resource.title.toLowerCase().includes(query) ||
       resource.author?.toLowerCase().includes(query) ||
-      resource.category?.toLowerCase().includes(query)
+      resource.category?.toLowerCase().includes(query) ||
+      resource.description?.toLowerCase().includes(query)
     )
   }
 
   if (selectedType.value) {
-    filtered = filtered.filter(resource => resource.digital_type === selectedType.value)
+    filtered = filtered.filter(resource => resource.type === selectedType.value)
   }
 
   if (selectedCategory.value) {
@@ -551,22 +594,24 @@ const refreshResources = async () => {
 
 const getResourceIcon = (type: string) => {
   switch (type) {
-    case 'e-book': return BookOpenIcon
+    case 'ebook': return BookOpenIcon
     case 'pdf': return DocumentTextIcon
-    case 'database': return GlobeAltIcon
     case 'journal': return DocumentIcon
-    case 'research': return DocumentIcon
+    case 'article': return DocumentIcon
+    case 'research_paper': return DocumentIcon
+    case 'thesis': return DocumentIcon
     default: return DocumentIcon
   }
 }
 
 const getTypeColorClass = (type: string) => {
   switch (type) {
-    case 'e-book': return 'bg-blue-100 text-blue-800'
+    case 'ebook': return 'bg-blue-100 text-blue-800'
     case 'pdf': return 'bg-red-100 text-red-800'
-    case 'database': return 'bg-green-100 text-green-800'
     case 'journal': return 'bg-purple-100 text-purple-800'
-    case 'research': return 'bg-orange-100 text-orange-800'
+    case 'article': return 'bg-green-100 text-green-800'
+    case 'research_paper': return 'bg-orange-100 text-orange-800'
+    case 'thesis': return 'bg-indigo-100 text-indigo-800'
     default: return 'bg-gray-100 text-gray-800'
   }
 }
@@ -575,15 +620,57 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString()
 }
 
+const formatFileSize = (bytes: string | null | undefined) => {
+  if (!bytes) return 'N/A'
+  const size = parseInt(bytes)
+  if (isNaN(size)) return 'N/A'
+  
+  const units = ['B', 'KB', 'MB', 'GB']
+  let unitIndex = 0
+  let fileSize = size
+  
+  while (fileSize >= 1024 && unitIndex < units.length - 1) {
+    fileSize /= 1024
+    unitIndex++
+  }
+  
+  return `${fileSize.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+}
+
 const openResource = (resource: DigitalResource) => {
   if (resource.url) {
     window.open(resource.url, '_blank')
   }
 }
 
-const downloadResource = (resource: DigitalResource) => {
-  if (resource.file_path) {
-    window.open(`/downloads/${resource.file_path}`, '_blank')
+const viewResource = (resource: DigitalResource) => {
+  if (resource.type === 'pdf' && resource.file_path) {
+    // Open PDF in new tab for viewing
+    window.open(`/api/library/digital-resources/${resource.id}/view`, '_blank')
+  } else if (resource.url) {
+    window.open(resource.url, '_blank')
+  }
+}
+
+const downloadResource = async (resource: DigitalResource) => {
+  try {
+    // Use the proper API endpoint for downloading
+    const response = await axios.get(`/library/digital-resources/${resource.id}/download`, {
+      responseType: 'blob'
+    })
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = resource.title || `resource-${resource.id}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Error downloading resource:', error)
+    alert('Failed to download resource. Please try again.')
   }
 }
 
@@ -592,7 +679,8 @@ const editResource = (resource: DigitalResource) => {
     id: resource.id,
     title: resource.title,
     author: resource.author || '',
-    digital_type: resource.digital_type,
+    type: resource.type,
+    format: resource.format || 'pdf',
     category: resource.category || '',
     url: resource.url || '',
     file_size: resource.file_size || '',
@@ -602,19 +690,22 @@ const editResource = (resource: DigitalResource) => {
 }
 
 const deleteResource = async (resource: DigitalResource) => {
-  if (confirm(`Are you sure you want to delete "${resource.title}"?`)) {
+  const confirmed = confirm(`Are you sure you want to delete "${resource.title}"?\n\nThis action cannot be undone.`)
+  if (confirmed) {
     try {
       await axios.delete(`/library/digital-resources/${resource.id}`)
       await refreshResources()
+      alert('Resource deleted successfully!')
     } catch (error) {
       console.error('Error deleting resource:', error)
-      alert('Error deleting resource')
+      alert('Failed to delete resource. Please try again.')
     }
   }
 }
 
 const saveResource = async () => {
   try {
+    savingResource.value = true
     if (showAddModal.value) {
       const { id, ...resourceData } = resourceForm.value
       await axios.post('/library/digital-resources', resourceData)
@@ -627,7 +718,9 @@ const saveResource = async () => {
     await refreshResources()
   } catch (error) {
     console.error('Error saving resource:', error)
-    alert('Error saving resource')
+    alert('Error saving resource. Please try again.')
+  } finally {
+    savingResource.value = false
   }
 }
 
@@ -638,7 +731,8 @@ const closeModal = () => {
     id: null,
     title: '',
     author: '',
-    digital_type: '',
+    type: '',
+    format: '',
     category: '',
     url: '',
     file_size: '',

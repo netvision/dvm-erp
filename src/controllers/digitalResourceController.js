@@ -304,14 +304,28 @@ class DigitalResourceController {
                 }
             }
 
+            // Determine the correct file path
+            let filePath;
+            if (resource.file_path.startsWith('/uploads/') || resource.file_path.startsWith('uploads/')) {
+                // Full path already provided, but need to adjust for actual location
+                const filename = path.basename(resource.file_path);
+                filePath = path.join(__dirname, '..', '..', 'uploads', filename);
+            } else {
+                // Just filename, construct full path
+                filePath = path.join(__dirname, '..', '..', 'uploads', resource.file_path);
+            }
+            
+            console.log('🔍 Trying to access file at:', filePath);
+            
             // Check if file exists
-            const filePath = path.join(__dirname, '..', 'uploads', 'digital', resource.file_path);
             try {
                 await fs.access(filePath);
             } catch (error) {
+                console.error('📁 File not found at:', filePath);
                 return res.status(404).json({
                     success: false,
-                    message: 'File not found on server'
+                    message: 'File not found on server',
+                    debug: `File path: ${filePath}`
                 });
             }
 
@@ -325,11 +339,28 @@ class DigitalResourceController {
             await this.logAccess(userId, id, 'download', req);
 
             // Set appropriate headers
-            res.setHeader('Content-Disposition', `attachment; filename="${resource.title}.${resource.format}"`);
+            const safeFilename = resource.title.replace(/[^\w\s.-]/g, '_');
+            res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.${resource.format}"`);
             res.setHeader('Content-Type', this.getMimeType(resource.format));
 
-            // Send file
-            res.sendFile(filePath);
+            // Send file - ensure absolute path
+            const absolutePath = path.resolve(filePath);
+            console.log('📁 Sending file from:', absolutePath);
+            
+            res.sendFile(absolutePath, (err) => {
+                if (err) {
+                    console.error('❌ Error sending file:', err);
+                    if (!res.headersSent) {
+                        res.status(404).json({
+                            success: false,
+                            message: 'Error sending file',
+                            error: err.message
+                        });
+                    }
+                } else {
+                    console.log('✅ File sent successfully');
+                }
+            });
         } catch (error) {
             console.error('Error downloading digital resource:', error);
             res.status(500).json({
@@ -373,10 +404,47 @@ class DigitalResourceController {
 
             // For online viewing, we'll return the file content or a viewer URL
             if (resource.format === 'pdf') {
-                const filePath = path.join(__dirname, '..', 'uploads', 'digital', resource.file_path);
-                res.setHeader('Content-Type', 'application/pdf');
-                res.setHeader('Content-Disposition', 'inline');
-                res.sendFile(filePath);
+                // Determine the correct file path
+                let filePath;
+                if (resource.file_path.startsWith('/uploads/') || resource.file_path.startsWith('uploads/')) {
+                    // Full path already provided, but need to adjust for actual location
+                    const filename = path.basename(resource.file_path);
+                    filePath = path.join(__dirname, '..', '..', 'uploads', filename);
+                } else {
+                    // Just filename, construct full path
+                    filePath = path.join(__dirname, '..', '..', 'uploads', resource.file_path);
+                }
+                
+                console.log('🔍 Trying to view file at:', filePath);
+                
+                try {
+                    await fs.access(filePath);
+                    res.setHeader('Content-Type', 'application/pdf');
+                    res.setHeader('Content-Disposition', 'inline');
+                    const absolutePath = path.resolve(filePath);
+                    console.log('📁 Viewing file from:', absolutePath);
+                    
+                    res.sendFile(absolutePath, (err) => {
+                        if (err) {
+                            console.error('❌ Error viewing file:', err);
+                            if (!res.headersSent) {
+                                res.status(404).json({
+                                    success: false,
+                                    message: 'Error viewing file',
+                                    error: err.message
+                                });
+                            }
+                        } else {
+                            console.log('✅ File viewed successfully');
+                        }
+                    });
+                } catch (error) {
+                    console.error('📁 File not found for viewing at:', filePath);
+                    return res.status(404).json({
+                        success: false,
+                        message: 'File not found on server'
+                    });
+                }
             } else {
                 // For other formats, return structured content for custom viewer
                 res.json({
