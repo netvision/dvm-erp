@@ -1023,6 +1023,232 @@ class DigitalResourceController {
         }
     }
 
+    // Create digital resource with file upload
+    async createWithUpload(req, res) {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'No file uploaded' 
+                });
+            }
+
+            const {
+                title,
+                author,
+                type,
+                format,
+                category,
+                description = '',
+                access_level = 'all',
+                language = 'English'
+            } = req.body;
+
+            if (!title || !type || !format) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Title, type, and format are required'
+                });
+            }
+
+            const file = req.file;
+            const fileExtension = path.extname(file.originalname).toLowerCase().substring(1);
+            const fileName = `${crypto.randomUUID()}.${fileExtension}`;
+            const filePath = path.join(__dirname, '..', '..', 'uploads', fileName);
+
+            // Create uploads directory if it doesn't exist
+            const uploadsDir = path.dirname(filePath);
+            await fs.mkdir(uploadsDir, { recursive: true });
+
+            // Move uploaded file to final location
+            await fs.writeFile(filePath, file.buffer);
+
+            const fileSize = file.size;
+
+            // Insert resource into database
+            const insertQuery = `
+                INSERT INTO digital_resources (
+                    title, author, type, format, category, description, file_path, file_size,
+                    language, access_level, uploaded_by, created_at, updated_at, is_active
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), true)
+                RETURNING *
+            `;
+
+            const result = await pool.query(insertQuery, [
+                title,
+                author || null,
+                type,
+                format,
+                category || null,
+                description,
+                fileName, // Store just the filename
+                fileSize.toString(),
+                language,
+                access_level,
+                req.user?.id || null
+            ]);
+
+            res.status(201).json({
+                success: true,
+                message: 'Digital resource created successfully',
+                data: result.rows[0]
+            });
+
+        } catch (error) {
+            console.error('Create with upload error:', error);
+            
+            // Clean up file if database insert failed
+            if (req.file && filePath) {
+                try {
+                    await fs.unlink(filePath);
+                } catch (unlinkError) {
+                    console.error('Error cleaning up file:', unlinkError);
+                }
+            }
+
+            res.status(500).json({
+                success: false,
+                message: 'Error creating digital resource',
+                error: error.message
+            });
+        }
+    }
+
+    // Update digital resource with file upload
+    async updateWithUpload(req, res) {
+        try {
+            const { id } = req.params;
+            
+            const {
+                title,
+                author,
+                type,
+                format,
+                category,
+                description,
+                access_level = 'all',
+                language = 'English'
+            } = req.body;
+
+            if (!title || !type || !format) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Title, type, and format are required'
+                });
+            }
+
+            let filePath = null;
+            let fileName = null;
+            let fileSize = null;
+
+            // Handle file upload if provided
+            if (req.file) {
+                const file = req.file;
+                const fileExtension = path.extname(file.originalname).toLowerCase().substring(1);
+                fileName = `${crypto.randomUUID()}.${fileExtension}`;
+                filePath = path.join(__dirname, '..', '..', 'uploads', fileName);
+
+                // Create uploads directory if it doesn't exist
+                const uploadsDir = path.dirname(filePath);
+                await fs.mkdir(uploadsDir, { recursive: true });
+
+                // Move uploaded file to final location
+                await fs.writeFile(filePath, file.buffer);
+                fileSize = file.size.toString();
+            }
+
+            // Build update query
+            let updateFields = [];
+            let queryParams = [];
+            let paramIndex = 1;
+
+            updateFields.push(`title = $${paramIndex}`);
+            queryParams.push(title);
+            paramIndex++;
+
+            updateFields.push(`author = $${paramIndex}`);
+            queryParams.push(author || null);
+            paramIndex++;
+
+            updateFields.push(`type = $${paramIndex}`);
+            queryParams.push(type);
+            paramIndex++;
+
+            updateFields.push(`format = $${paramIndex}`);
+            queryParams.push(format);
+            paramIndex++;
+
+            updateFields.push(`category = $${paramIndex}`);
+            queryParams.push(category || null);
+            paramIndex++;
+
+            updateFields.push(`description = $${paramIndex}`);
+            queryParams.push(description || null);
+            paramIndex++;
+
+            updateFields.push(`language = $${paramIndex}`);
+            queryParams.push(language);
+            paramIndex++;
+
+            updateFields.push(`access_level = $${paramIndex}`);
+            queryParams.push(access_level);
+            paramIndex++;
+
+            if (fileName) {
+                updateFields.push(`file_path = $${paramIndex}`);
+                queryParams.push(fileName);
+                paramIndex++;
+
+                updateFields.push(`file_size = $${paramIndex}`);
+                queryParams.push(fileSize);
+                paramIndex++;
+            }
+
+            updateFields.push('updated_at = NOW()');
+
+            queryParams.push(id);
+            const updateQuery = `
+                UPDATE digital_resources 
+                SET ${updateFields.join(', ')}
+                WHERE id = $${paramIndex} AND is_active = true
+                RETURNING *
+            `;
+
+            const result = await pool.query(updateQuery, queryParams);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Digital resource not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Digital resource updated successfully',
+                data: result.rows[0]
+            });
+
+        } catch (error) {
+            console.error('Update with upload error:', error);
+            
+            // Clean up file if database update failed
+            if (req.file && filePath) {
+                try {
+                    await fs.unlink(filePath);
+                } catch (unlinkError) {
+                    console.error('Error cleaning up file:', unlinkError);
+                }
+            }
+
+            res.status(500).json({
+                success: false,
+                message: 'Error updating digital resource',
+                error: error.message
+            });
+        }
+    }
+
     getFileType(extension) {
         const typeMap = {
             'pdf': 'document',

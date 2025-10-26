@@ -92,8 +92,9 @@ router.get('/digital-resources/:id/view', authenticateToken, digitalResourceCont
 router.post('/digital-resources/:id/track-view', authenticateToken, digitalResourceController.trackView);
 router.post('/digital-resources/:id/track-download', authenticateToken, digitalResourceController.trackDownload);
 router.post('/digital-resources', authenticateToken, requireRole(['admin', 'librarian']), digitalResourceController.create);
-router.post('/digital-resources/upload', authenticateToken, requireRole(['admin', 'librarian']), upload.single('file'), digitalResourceController.upload);
+router.post('/digital-resources/upload', authenticateToken, requireRole(['admin', 'librarian']), upload.single('file'), digitalResourceController.createWithUpload);
 router.put('/digital-resources/:id', authenticateToken, requireRole(['admin', 'librarian']), digitalResourceController.update);
+router.put('/digital-resources/:id/upload', authenticateToken, requireRole(['admin', 'librarian']), upload.single('file'), digitalResourceController.updateWithUpload);
 router.delete('/digital-resources/:id', authenticateToken, requireRole(['admin', 'librarian']), digitalResourceController.delete);
 router.post('/digital-resources/:id/bookmark', authenticateToken, digitalResourceController.addBookmark);
 router.post('/digital-resources/:id/annotate', authenticateToken, digitalResourceController.addAnnotation);

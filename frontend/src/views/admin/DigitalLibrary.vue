@@ -404,12 +404,105 @@
             <!-- Access Information Section -->
             <div class="bg-gray-50 rounded-lg p-4">
               <h3 class="text-lg font-semibold text-gray-900 mb-4">Access Information</h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <!-- Upload Method Selection -->
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Choose Access Method</label>
+                <div class="flex space-x-4">
+                  <label class="flex items-center">
+                    <input
+                      v-model="uploadMethod"
+                      type="radio"
+                      value="file"
+                      class="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span class="ml-2 text-sm text-gray-700">Upload File</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input
+                      v-model="uploadMethod"
+                      type="radio"
+                      value="url"
+                      class="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span class="ml-2 text-sm text-gray-700">External URL</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- File Upload Section -->
+              <div v-if="uploadMethod === 'file'" class="space-y-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">URL (for online resources)</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Upload File *</label>
+                  <div class="relative">
+                    <input
+                      ref="fileInput"
+                      type="file"
+                      @change="handleFileSelect"
+                      accept=".pdf,.epub,.mobi,.docx,.doc,.html,.txt"
+                      class="hidden"
+                    />
+                    <div 
+                      @click="$refs.fileInput?.click()"
+                      @dragover.prevent="isDragOver = true"
+                      @dragleave.prevent="isDragOver = false"
+                      @drop.prevent="handleFileDrop"
+                      :class="[
+                        'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
+                        isDragOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50',
+                        selectedFile ? 'border-green-400 bg-green-50' : ''
+                      ]"
+                    >
+                      <div v-if="!selectedFile">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <p class="mt-2 text-sm text-gray-600">
+                          <span class="font-medium text-purple-600">Click to upload</span> or drag and drop
+                        </p>
+                        <p class="text-xs text-gray-500">PDF, EPUB, MOBI, DOCX, HTML files up to 50MB</p>
+                      </div>
+                      <div v-else class="flex items-center justify-center space-x-2">
+                        <svg class="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                          <p class="text-sm font-medium text-gray-900">{{ selectedFile.name }}</p>
+                          <p class="text-xs text-gray-500">{{ formatFileSize(selectedFile.size) }}</p>
+                        </div>
+                        <button
+                          @click.stop="removeSelectedFile"
+                          class="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Upload Progress -->
+                  <div v-if="uploadProgress > 0 && uploadProgress < 100" class="mt-2">
+                    <div class="bg-gray-200 rounded-full h-2">
+                      <div 
+                        class="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                        :style="{ width: uploadProgress + '%' }"
+                      ></div>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-1">Uploading... {{ uploadProgress }}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- URL Section -->
+              <div v-if="uploadMethod === 'url'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">URL *</label>
                   <input
                     v-model="resourceForm.url"
                     type="url"
+                    required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     placeholder="https://example.com/resource"
                   />
@@ -508,6 +601,13 @@ const pageSize = ref(10)
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const savingResource = ref(false)
+
+// File upload data
+const uploadMethod = ref('file')
+const selectedFile = ref<File | null>(null)
+const isDragOver = ref(false)
+const uploadProgress = ref(0)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 // Form data
 const resourceForm = ref({
@@ -622,9 +722,9 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-const formatFileSize = (bytes: string | null | undefined) => {
+const formatFileSize = (bytes: string | number | null | undefined) => {
   if (!bytes) return 'N/A'
-  const size = parseInt(bytes)
+  const size = typeof bytes === 'string' ? parseInt(bytes) : bytes
   if (isNaN(size)) return 'N/A'
   
   const units = ['B', 'KB', 'MB', 'GB']
@@ -637,6 +737,72 @@ const formatFileSize = (bytes: string | null | undefined) => {
   }
   
   return `${fileSize.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+}
+
+// File upload functions
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0]
+    validateAndSetFile(file)
+  }
+}
+
+const handleFileDrop = (event: DragEvent) => {
+  isDragOver.value = false
+  if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+    const file = event.dataTransfer.files[0]
+    validateAndSetFile(file)
+  }
+}
+
+const validateAndSetFile = (file: File) => {
+  // Check file size (50MB limit)
+  const maxSize = 50 * 1024 * 1024 // 50MB
+  if (file.size > maxSize) {
+    alert('File size exceeds 50MB limit. Please select a smaller file.')
+    return
+  }
+
+  // Check file type
+  const allowedTypes = [
+    'application/pdf',
+    'application/epub+zip',
+    'application/x-mobipocket-ebook',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+    'text/html',
+    'text/plain'
+  ]
+  
+  if (!allowedTypes.includes(file.type)) {
+    alert('Invalid file type. Please select a PDF, EPUB, MOBI, DOCX, or HTML file.')
+    return
+  }
+
+  selectedFile.value = file
+  resourceForm.value.file_size = formatFileSize(file.size)
+  
+  // Auto-detect format from file type
+  if (file.type === 'application/pdf') {
+    resourceForm.value.format = 'pdf'
+  } else if (file.type === 'application/epub+zip') {
+    resourceForm.value.format = 'epub'
+  } else if (file.type === 'application/x-mobipocket-ebook') {
+    resourceForm.value.format = 'mobi'
+  } else if (file.type.includes('wordprocessingml') || file.type === 'application/msword') {
+    resourceForm.value.format = 'docx'
+  } else if (file.type === 'text/html') {
+    resourceForm.value.format = 'html'
+  }
+}
+
+const removeSelectedFile = () => {
+  selectedFile.value = null
+  resourceForm.value.file_size = ''
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
 }
 
 const openResource = (resource: DigitalResource) => {
@@ -708,12 +874,63 @@ const deleteResource = async (resource: DigitalResource) => {
 const saveResource = async () => {
   try {
     savingResource.value = true
+    
     if (showAddModal.value) {
       const { id, ...resourceData } = resourceForm.value
-      await axios.post('/library/digital-resources', resourceData)
+      
+      // If uploading a file, use FormData
+      if (uploadMethod.value === 'file' && selectedFile.value) {
+        const formData = new FormData()
+        formData.append('file', selectedFile.value)
+        
+        // Append all other fields
+        Object.entries(resourceData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            formData.append(key, value.toString())
+          }
+        })
+        
+        await axios.post('/library/digital-resources/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            }
+          }
+        })
+      } else {
+        // Regular form submission for URL-based resources
+        await axios.post('/library/digital-resources', resourceData)
+      }
     } else {
+      // For editing, handle file replacement if needed
       const { id, ...resourceData } = resourceForm.value
-      await axios.put(`/library/digital-resources/${id}`, resourceData)
+      
+      if (uploadMethod.value === 'file' && selectedFile.value) {
+        const formData = new FormData()
+        formData.append('file', selectedFile.value)
+        
+        Object.entries(resourceData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            formData.append(key, value.toString())
+          }
+        })
+        
+        await axios.put(`/library/digital-resources/${id}/upload`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            }
+          }
+        })
+      } else {
+        await axios.put(`/library/digital-resources/${id}`, resourceData)
+      }
     }
     
     closeModal()
@@ -723,12 +940,15 @@ const saveResource = async () => {
     alert('Error saving resource. Please try again.')
   } finally {
     savingResource.value = false
+    uploadProgress.value = 0
   }
 }
 
 const closeModal = () => {
   showAddModal.value = false
   showEditModal.value = false
+  
+  // Reset form
   resourceForm.value = {
     id: null,
     title: '',
@@ -739,6 +959,15 @@ const closeModal = () => {
     url: '',
     file_size: '',
     description: ''
+  }
+  
+  // Reset file upload state
+  uploadMethod.value = 'file'
+  selectedFile.value = null
+  isDragOver.value = false
+  uploadProgress.value = 0
+  if (fileInput.value) {
+    fileInput.value.value = ''
   }
 }
 
