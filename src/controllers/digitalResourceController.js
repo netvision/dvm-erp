@@ -355,10 +355,22 @@ class DigitalResourceController {
             const contentType = mimeTypes[resource.format.toLowerCase()] || 'application/octet-stream';
             console.log('🎯 Setting Content-Type:', contentType);
             
+            // Ensure filename has correct extension
+            const finalFilename = safeFilename.endsWith(`.${resource.format}`) 
+                ? safeFilename 
+                : `${safeFilename}.${resource.format}`;
+            
+            // Set multiple headers to force proper file type recognition
             res.setHeader('Content-Type', contentType);
-            res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.${resource.format}"`);
-            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Content-Disposition', `attachment; filename="${finalFilename}"`);
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
             res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('X-Download-Options', 'noopen');
+            
+            console.log('📋 Final filename:', finalFilename);
+            console.log('📋 Content-Disposition:', `attachment; filename="${finalFilename}"`);
 
             // Send file - ensure absolute path
             const absolutePath = path.resolve(filePath);
