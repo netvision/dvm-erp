@@ -760,14 +760,47 @@ const deleteResource = async (resource: MediaResource) => {
   }
 }
 
+// Utility function to map media type to format
+const getFormatFromType = (mediaType: string): string => {
+  const formatMap: Record<string, string> = {
+    'video': 'mp4',
+    'audio': 'mp3', 
+    'presentation': 'pptx',
+    'interactive': 'html'
+  }
+  return formatMap[mediaType] || 'unknown'
+}
+
 const saveResource = async () => {
   try {
     if (showAddModal.value) {
-      const { id, ...resourceData } = resourceForm.value
-      await axios.post(`${API_BASE_URL}/api/library/media-resources`, resourceData)
+      const { id, media_type, ...resourceData } = resourceForm.value
+      
+      // Map frontend fields to backend expected fields
+      const backendData = {
+        ...resourceData,
+        type: media_type, // Backend expects 'type' not 'media_type'
+        format: getFormatFromType(media_type), // Provide required format field
+        genre: resourceData.category || 'General', // Map category to genre
+        language: 'English', // Default language
+        access_level: 'public' // Default access level
+      }
+      
+      await axios.post(`${API_BASE_URL}/api/library/media-resources`, backendData)
     } else {
-      const { id, ...resourceData } = resourceForm.value
-      await axios.put(`${API_BASE_URL}/api/library/media-resources/${id}`, resourceData)
+      const { id, media_type, ...resourceData } = resourceForm.value
+      
+      // Map frontend fields to backend expected fields  
+      const backendData = {
+        ...resourceData,
+        type: media_type, // Backend expects 'type' not 'media_type'
+        format: getFormatFromType(media_type), // Provide required format field
+        genre: resourceData.category || 'General', // Map category to genre
+        language: 'English', // Default language
+        access_level: 'public' // Default access level
+      }
+      
+      await axios.put(`${API_BASE_URL}/api/library/media-resources/${id}`, backendData)
     }
     
     closeModal()
