@@ -341,23 +341,37 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-const downloadResource = (resource: any) => {
+const downloadResource = async (resource: any) => {
   console.log('Downloading:', resource.title)
   
-  if (resource.file_path) {
-    // Create download link with correct backend URL
-    const downloadUrl = `http://localhost:3000/uploads/${resource.file_path}`
+  try {
+    // Use the proper API endpoint for download
+    const response = await axios.get(`/library/digital-resources/${resource.id}/download`, {
+      responseType: 'blob'
+    })
+    
+    // Create blob URL and download
+    const blob = new Blob([response.data])
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = downloadUrl
-    link.download = resource.original_filename || resource.title || 'download'
+    link.href = url
+    
+    // Use proper filename with extension
+    const filename = resource.title.includes('.') 
+      ? resource.title 
+      : `${resource.title}.${resource.format || 'pdf'}`
+    link.download = filename
+    
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-  } else if (resource.url || resource.access_url) {
-    // For external resources, open in new tab
-    window.open(resource.url || resource.access_url, '_blank')
-  } else {
-    alert(`Cannot download "${resource.title}". File not found.`)
+    
+    // Clean up blob URL
+    window.URL.revokeObjectURL(url)
+    
+  } catch (error: any) {
+    console.error('Error downloading resource:', error)
+    alert(`Cannot download "${resource.title}". ${error.response?.data?.message || 'Download failed.'}`)
   }
 }
 

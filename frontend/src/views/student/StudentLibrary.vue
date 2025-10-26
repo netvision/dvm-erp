@@ -194,20 +194,37 @@ const closeMediaViewer = () => {
   selectedResource.value = null
 }
 
-const downloadResource = (resource: any) => {
-  if (resource.file_path) {
-    const downloadUrl = `http://localhost:3000/uploads/${resource.file_path}`
+const downloadResource = async (resource: any) => {
+  try {
+    // Use the proper API endpoint for download
+    const response = await axios.get(`/library/digital-resources/${resource.id}/download`, {
+      responseType: 'blob'
+    })
+    
+    // Create blob URL and download
+    const blob = new Blob([response.data])
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = downloadUrl
-    link.download = resource.original_filename || resource.title || 'download'
+    link.href = url
+    
+    // Use proper filename with extension
+    const filename = resource.title.includes('.') 
+      ? resource.title 
+      : `${resource.title}.${resource.format || 'pdf'}`
+    link.download = filename
+    
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     
+    // Clean up blob URL
+    window.URL.revokeObjectURL(url)
+    
     // Track download
     trackResourceDownload(resource.id)
-  } else {
-    alert(`Cannot download "${resource.title}". File not found.`)
+  } catch (error: any) {
+    console.error('Error downloading resource:', error)
+    alert(`Cannot download "${resource.title}". ${error.response?.data?.message || 'Download failed.'}`)
   }
 }
 

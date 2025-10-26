@@ -145,3 +145,5 @@ coverage/
 # Production build files
 build/
 dist/
+# Local Netlify folder
+.netlify
