@@ -18,54 +18,30 @@
             </button>
           </div>
         </div>
-
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-          <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-green-100 text-sm">Total Media Items</p>
-                <p class="text-2xl font-bold text-white">{{ totalMediaResources }}</p>
-              </div>
-              <div class="p-2 bg-white/20 rounded-lg">
-                <PlayCircleIcon class="w-6 h-6 text-white" />
-              </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          <div>
+            <p class="text-green-100 text-sm">Total Media Items</p>
+            <p class="text-2xl font-bold text-white">{{ totalMediaResources }}</p>
+          </div>
+          <div class="p-2 bg-white/20 rounded-lg flex items-center">
+            <PlayCircleIcon class="w-6 h-6 text-white mr-2" />
+            <div>
+              <p class="text-green-100 text-sm">Video Content</p>
+              <p class="text-2xl font-bold text-white">{{ videoCount }}</p>
             </div>
           </div>
-
-          <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-green-100 text-sm">Video Content</p>
-                <p class="text-2xl font-bold text-white">{{ videoCount }}</p>
-              </div>
-              <div class="p-2 bg-white/20 rounded-lg">
-                <VideoCameraIcon class="w-6 h-6 text-white" />
-              </div>
+          <div class="p-2 bg-white/20 rounded-lg flex items-center">
+            <SpeakerWaveIcon class="w-6 h-6 text-white mr-2" />
+            <div>
+              <p class="text-green-100 text-sm">Audio Content</p>
+              <p class="text-2xl font-bold text-white">{{ audioCount }}</p>
             </div>
           </div>
-
-          <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-green-100 text-sm">Audio Content</p>
-                <p class="text-2xl font-bold text-white">{{ audioCount }}</p>
-              </div>
-              <div class="p-2 bg-white/20 rounded-lg">
-                <SpeakerWaveIcon class="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-green-100 text-sm">Interactive Media</p>
-                <p class="text-2xl font-bold text-white">{{ interactiveCount }}</p>
-              </div>
-              <div class="p-2 bg-white/20 rounded-lg">
-                <CursorArrowRaysIcon class="w-6 h-6 text-white" />
-              </div>
+          <div class="p-2 bg-white/20 rounded-lg flex items-center">
+            <CursorArrowRaysIcon class="w-6 h-6 text-white mr-2" />
+            <div>
+              <p class="text-green-100 text-sm">Interactive Media</p>
+              <p class="text-2xl font-bold text-white">{{ interactiveCount }}</p>
             </div>
           </div>
         </div>
@@ -171,10 +147,17 @@
               </div>
 
               <!-- Type Badge -->
-              <div class="absolute top-2 left-2">
+              <div class="absolute top-2 left-2 flex items-center space-x-1">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                       :class="getTypeColorClass(resource.media_type)">
                   {{ resource.media_type }}
+                </span>
+                <!-- External URL indicator -->
+                <span v-if="isExternalVideoUrl(resource)" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                  {{ isYouTubeUrl(resource.url || resource.external_url || '') ? 'YouTube' : isVimeoUrl(resource.url || resource.external_url || '') ? 'Vimeo' : 'External' }}
                 </span>
               </div>
 
@@ -209,14 +192,14 @@
                   <button
                     @click="editResource(resource)"
                     class="text-green-600 hover:text-green-800 p-1 rounded-lg hover:bg-green-50 transition-colors"
-                    title="Edit Resource"
+                    title="Edit"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="deleteResource(resource)"
                     class="text-red-600 hover:text-red-800 p-1 rounded-lg hover:bg-red-50 transition-colors"
-                    title="Delete Resource"
+                    title="Delete"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -228,72 +211,66 @@
       </div>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <div v-if="showAddModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <!-- Add/Edit Media Modal -->
+    <div v-if="showAddModal || showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+      <div class="bg-white rounded-lg w-full max-w-2xl max-h-screen overflow-auto">
         <div class="p-6">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">
-              {{ showAddModal ? 'Add Media Resource' : 'Edit Media Resource' }}
-            </h2>
-            <button @click="closeModal" class="text-gray-400 hover:text-gray-600 transition-colors">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">
+            {{ showAddModal ? 'Add Media Resource' : 'Edit Media Resource' }}
+          </h2>
           
           <form @submit.prevent="saveResource" class="space-y-6">
-            <!-- Basic Information Section -->
-            <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
-                  <input
-                    v-model="resourceForm.title"
-                    type="text"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="Enter media title"
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Author/Creator</label>
-                  <input
-                    v-model="resourceForm.author"
-                    type="text"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="Enter creator name"
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Type *</label>
-                  <select
-                    v-model="resourceForm.media_type"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  >
-                    <option value="">Select Type</option>
-                    <option value="video">Video</option>
-                    <option value="audio">Audio</option>
-                    <option value="interactive">Interactive Media</option>
-                    <option value="presentation">Presentation</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    v-model="resourceForm.category"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  >
-                    <option value="">Select Category</option>
-                    <option value="Educational">Educational</option>
-                    <option value="Documentary">Documentary</option>
-                    <option value="Training">Training</option>
-                    <option value="Lecture">Lecture</option>
-                  </select>
-                </div>
+            <!-- Title -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+              <input
+                v-model="resourceForm.title"
+                type="text"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                placeholder="Media title"
+              />
+            </div>
+
+            <!-- Author -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Author</label>
+              <input
+                v-model="resourceForm.author"
+                type="text"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                placeholder="Author name"
+              />
+            </div>
+
+            <!-- Media Type and Category -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Media Type</label>
+                <select
+                  v-model="resourceForm.media_type"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">Select Type</option>
+                  <option value="video">Video</option>
+                  <option value="audio">Audio</option>
+                  <option value="interactive">Interactive</option>
+                  <option value="presentation">Presentation</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  v-model="resourceForm.category"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">Select Category</option>
+                  <option value="Educational">Educational</option>
+                  <option value="Documentary">Documentary</option>
+                  <option value="Training">Training</option>
+                  <option value="Lecture">Lecture</option>
+                </select>
               </div>
             </div>
 
@@ -374,11 +351,16 @@
                     v-model="resourceForm.url"
                     type="url"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="https://example.com/media-file"
+                    placeholder="https://youtube.com/watch?v=... or https://example.com/video.mp4"
                   />
-                  <p class="text-xs text-gray-500 mt-1">
-                    Supported: YouTube, Vimeo, direct video/audio links, or any media URL
+                  <p class="text-xs text-gray-500 mt-2">
+                    <strong>Supported formats:</strong>
                   </p>
+                  <ul class="text-xs text-gray-500 mt-1 ml-4 list-disc">
+                    <li>YouTube: Full URL or short link (youtube.com/watch?v=... or youtu.be/...)</li>
+                    <li>Vimeo: Direct video link (vimeo.com/...)</li>
+                    <li>Direct media links: MP4, MP3, or other media file URLs</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -431,9 +413,8 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Media Viewer Modal -->
+    <!-- Media Viewer Modal -->
   <div v-if="showViewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8);" @click="closeViewModal">
     <div class="bg-white rounded-lg w-full max-w-6xl max-h-screen overflow-auto" @click.stop>
       <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -453,81 +434,107 @@
         </div>
         
         <div class="mt-2">
-          <!-- Video Player -->
-          <div v-if="viewingResource?.media_type === 'video'" class="w-full">
-            <video 
-              v-if="getMediaUrl(viewingResource)"
-              :src="getMediaUrl(viewingResource)" 
-              controls 
-              class="w-full rounded-lg shadow-lg" 
-              style="max-height: 500px;"
-              preload="metadata"
-            >
-              Your browser does not support the video tag.
-            </video>
-          </div>
 
-          <!-- Audio Player -->
-          <div v-else-if="viewingResource?.media_type === 'audio'" class="w-full">
-            <div class="bg-gray-50 rounded-lg p-8 flex flex-col items-center">
-              <div class="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6">
-                <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+          <!-- Unified viewer logic: only one block renders at a time -->
+          <!-- YouTube/Vimeo and other external video URLs -->
+          <template v-if="isExternalVideoUrl(viewingResource)">
+            <div class="w-full flex flex-col items-center">
+              <div class="w-full" style="max-width: 960px;">
+                <div class="relative" style="padding-bottom: 56.25%; height: 0; overflow: hidden;">
+                  <iframe 
+                    :src="getEmbeddableUrl(viewingResource)"
+                    class="absolute top-0 left-0 w-full h-full border-0 rounded-lg shadow-lg"
+                    style="border-radius: 12px;"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                    title="External Video Player"
+                  ></iframe>
+                </div>
+              </div>
+            </div>
+          </template>
+          <!-- Local video files -->
+          <template v-else-if="isVideoFile(viewingResource)">
+            <div class="w-full flex flex-col items-center">
+              <video
+                v-if="getMediaUrl(viewingResource)"
+                :src="getMediaUrl(viewingResource)"
+                controls
+                playsinline
+                preload="metadata"
+                style="width: 100%; max-width: 720px; max-height: 500px; background: #000; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.15);"
+                :poster="viewingResource?.thumbnail_url || ''"
+              >
+                Sorry, your browser doesn't support embedded videos.
+              </video>
+              <div v-else class="text-gray-500 text-center py-8">
+                <p>Video preview not available.</p>
+              </div>
+            </div>
+          </template>
+          <template v-else-if="viewingResource?.media_type === 'audio'">
+            <div class="w-full">
+              <div class="bg-gray-50 rounded-lg p-8 flex flex-col items-center">
+                <div class="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6">
+                  <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                  </svg>
+                </div>
+                <audio 
+                  v-if="getMediaUrl(viewingResource)"
+                  :src="getMediaUrl(viewingResource)" 
+                  controls 
+                  class="w-full max-w-md"
+                  preload="metadata"
+                >
+                  Your browser does not support the audio tag.
+                </audio>
+              </div>
+            </div>
+          </template>
+          <template v-else-if="viewingResource?.media_type === 'presentation' || viewingResource?.media_type === 'interactive'">
+            <div class="w-full">
+              <iframe 
+                v-if="getMediaUrl(viewingResource)"
+                :src="getMediaUrl(viewingResource)"
+                class="w-full border-0 rounded-lg shadow-lg"
+                style="height: 600px;"
+                title="Media Viewer"
+              ></iframe>
+            </div>
+          </template>
+          <template v-else-if="viewingResource?.url">
+            <div class="w-full">
+              <iframe 
+                :src="viewingResource.url"
+                class="w-full border-0 rounded-lg shadow-lg"
+                style="height: 600px;"
+                title="External Media Viewer"
+              ></iframe>
+            </div>
+          </template>
+          <template v-else>
+            <div class="text-center py-12">
+              <div class="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 00-2.828-2.828z"></path>
                 </svg>
               </div>
-              <audio 
+              <p class="text-gray-500 mb-4">Preview not available for this media type.</p>
+              <p class="text-sm text-gray-400 mb-6">{{ viewingResource?.description || 'No description available.' }}</p>
+              <button 
                 v-if="getMediaUrl(viewingResource)"
-                :src="getMediaUrl(viewingResource)" 
-                controls 
-                class="w-full max-w-md"
-                preload="metadata"
+                @click="downloadMedia(viewingResource!)"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                Your browser does not support the audio tag.
-              </audio>
+                <svg class="-ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download Media
+              </button>
             </div>
-          </div>
-
-          <!-- Presentation/Interactive Content -->
-          <div v-else-if="viewingResource?.media_type === 'presentation' || viewingResource?.media_type === 'interactive'" class="w-full">
-            <iframe 
-              v-if="getMediaUrl(viewingResource)"
-              :src="getMediaUrl(viewingResource)"
-              class="w-full border-0 rounded-lg shadow-lg"
-              style="height: 600px;"
-              title="Media Viewer"
-            ></iframe>
-          </div>
-
-          <!-- External URL -->
-          <div v-else-if="viewingResource?.url" class="w-full">
-            <iframe 
-              :src="viewingResource.url"
-              class="w-full border-0 rounded-lg shadow-lg"
-              style="height: 600px;"
-              title="External Media Viewer"
-            ></iframe>
-          </div>
-
-          <!-- Fallback for unsupported formats -->
-          <div v-else class="text-center py-12">
-            <div class="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 00-2.828-2.828z"></path>
-              </svg>
-            </div>
-            <p class="text-gray-500 mb-4">Preview not available for this media type.</p>
-            <p class="text-sm text-gray-400 mb-6">{{ viewingResource?.description || 'No description available.' }}</p>
-            <button 
-              v-if="getMediaUrl(viewingResource)"
-              @click="downloadMedia(viewingResource!)"
-              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <svg class="-ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Download Media
-            </button>
-          </div>
+          </template>
         </div>
 
         <div class="mt-6 flex justify-end">
@@ -541,9 +548,92 @@
       </div>
     </div>
   </div>
+  </div>
 </template>
 
 <script setup lang="ts">
+
+// Helper: Detect if resource is a video file by extension or media_type
+function isVideoFile(resource: MediaResource | null): boolean {
+  if (!resource) return false
+  // Don't treat external URLs as video files - they need iframe embedding
+  if (isExternalVideoUrl(resource)) return false
+  
+  const url = getMediaUrl(resource)
+  const videoExts = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv']
+  if (resource.media_type === 'video' && !resource.url && !resource.external_url?.includes('youtube') && !resource.external_url?.includes('vimeo')) return true
+  if (url) {
+    return videoExts.some(ext => url.toLowerCase().includes(ext))
+  }
+  return false
+}
+
+// Helper: Check if URL is YouTube
+function isYouTubeUrl(url: string): boolean {
+  if (!url) return false
+  return url.includes('youtube.com') || url.includes('youtu.be')
+}
+
+// Helper: Check if URL is Vimeo
+function isVimeoUrl(url: string): boolean {
+  if (!url) return false
+  return url.includes('vimeo.com')
+}
+
+// Helper: Check if resource has external video URL (YouTube, Vimeo, etc.)
+function isExternalVideoUrl(resource: MediaResource | null): boolean {
+  if (!resource) return false
+  const url = resource.url || resource.external_url || ''
+  return isYouTubeUrl(url) || isVimeoUrl(url)
+}
+
+// Helper: Convert YouTube URL to embed URL
+function getYouTubeEmbedUrl(url: string): string {
+  if (!url) return ''
+  
+  // Handle different YouTube URL formats
+  let videoId = ''
+  
+  if (url.includes('youtube.com/watch?v=')) {
+    const parts = url.split('v=')[1]?.split('&')[0]
+    videoId = parts || ''
+  } else if (url.includes('youtu.be/')) {
+    const parts = url.split('youtu.be/')[1]?.split('?')[0]
+    videoId = parts || ''
+  } else if (url.includes('youtube.com/embed/')) {
+    return url // Already an embed URL
+  }
+  
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : url
+}
+
+// Helper: Convert Vimeo URL to embed URL
+function getVimeoEmbedUrl(url: string): string {
+  if (!url) return ''
+  
+  if (url.includes('vimeo.com/')) {
+    const videoId = url.split('vimeo.com/')[1]?.split('?')[0]?.split('/')[0] || ''
+    return videoId ? `https://player.vimeo.com/video/${videoId}` : url
+  }
+  
+  return url
+}
+
+// Helper: Get embeddable URL for external videos
+function getEmbeddableUrl(resource: MediaResource | null): string {
+  if (!resource) return ''
+  
+  const url = resource.url || resource.external_url || ''
+  
+  if (isYouTubeUrl(url)) {
+    return getYouTubeEmbedUrl(url)
+  } else if (isVimeoUrl(url)) {
+    return getVimeoEmbedUrl(url)
+  }
+  
+  return url
+}
+
 import { ref, onMounted, computed } from 'vue'
 import { 
   PlusIcon, 
@@ -661,7 +751,16 @@ const refreshResources = async () => {
   loading.value = true
   try {
     const response = await axios.get(`${API_BASE_URL}/api/library/media-resources`)
-    mediaResources.value = response.data.data || response.data || []
+    const rawData = response.data.data || response.data || []
+    
+    // Map backend fields to frontend fields
+    mediaResources.value = rawData.map((resource: any) => ({
+      ...resource,
+      media_type: resource.type || resource.media_type, // Backend uses 'type', frontend uses 'media_type'
+      category: resource.genre || resource.category, // Backend uses 'genre', frontend uses 'category'
+    }))
+    
+    console.log('📚 Loaded media resources:', mediaResources.value.length)
   } catch (error) {
     console.error('Error fetching media resources:', error)
     mediaResources.value = []
@@ -866,9 +965,17 @@ const editResource = (resource: MediaResource) => {
     author: resource.author || '',
     media_type: resource.media_type,
     category: resource.category || '',
-    url: resource.url || '',
+    url: resource.url || resource.external_url || '', // Load from either url or external_url
     description: resource.description || ''
   }
+  
+  // Set upload method based on whether there's a URL or file
+  if (resource.url || resource.external_url) {
+    uploadMethod.value = 'url'
+  } else if (resource.file_path) {
+    uploadMethod.value = 'file'
+  }
+  
   showEditModal.value = true
 }
 
@@ -928,7 +1035,10 @@ const saveResource = async () => {
     
     // Step 2: Create or update the media resource
     if (showAddModal.value) {
-      const { id, media_type, ...resourceData } = resourceForm.value
+      const { id, media_type, url, ...resourceData } = resourceForm.value
+      
+      // Determine the external URL: from file upload or from URL input
+      const externalUrl = fileUrl || url || ''
       
       // Map frontend fields to backend expected fields
       const backendData = {
@@ -938,15 +1048,28 @@ const saveResource = async () => {
         genre: resourceData.category || 'General', // Map category to genre
         language: 'English', // Default language
         access_level: 'public', // Default access level
-        // Add file information if uploaded
-        ...(fileUrl && { external_url: fileUrl }),
+        // Add file information if uploaded or URL provided
+        ...(externalUrl && { external_url: externalUrl }),
         ...(filePath && { file_path: filePath })
       }
       
       console.log('💾 Creating media resource with data:', backendData)
       await axios.post(`${API_BASE_URL}/api/library/media-resources`, backendData)
     } else {
-      const { id, media_type, ...resourceData } = resourceForm.value
+      const { id, media_type, url, ...resourceData } = resourceForm.value
+      
+      console.log('📝 Edit form values:', {
+        id,
+        media_type,
+        url,
+        resourceData,
+        resourceForm: resourceForm.value
+      })
+      
+      // Determine the external URL: from file upload or from URL input
+      const externalUrl = fileUrl || url || ''
+      
+      console.log('🔗 Determined externalUrl:', externalUrl, 'from fileUrl:', fileUrl, 'url:', url)
       
       // Map frontend fields to backend expected fields  
       const backendData = {
@@ -956,13 +1079,15 @@ const saveResource = async () => {
         genre: resourceData.category || 'General', // Map category to genre
         language: 'English', // Default language
         access_level: 'public', // Default access level
-        // Add file information if uploaded (for updates, only if new file)
-        ...(fileUrl && { external_url: fileUrl }),
+        // Always include external_url for updates (can be empty string to clear)
+        external_url: externalUrl,
+        // Only include file_path if it exists
         ...(filePath && { file_path: filePath })
       }
       
       console.log('✏️ Updating media resource with data:', backendData)
-      await axios.put(`${API_BASE_URL}/api/library/media-resources/${id}`, backendData)
+      const response = await axios.put(`${API_BASE_URL}/api/library/media-resources/${id}`, backendData)
+      console.log('✅ Update response:', response.data)
     }
     
     closeModal()
@@ -1010,14 +1135,39 @@ const closeViewModal = () => {
 const getMediaUrl = (resource: MediaResource | null): string => {
   if (!resource) return ''
   
+  console.log('🔍 Debug resource data:', {
+    id: resource.id,
+    title: resource.title,
+    external_url: resource.external_url,
+    url: resource.url,
+    file_path: resource.file_path,
+    API_BASE_URL
+  })
+  
   // Priority order for media URLs:
   // 1. external_url (for uploaded files via file upload endpoint)
   // 2. url (for external URLs entered manually)  
   // 3. file_path (construct from uploads directory)
   
   if (resource.external_url) {
-    console.log('🔗 Using external_url:', resource.external_url)
-    return resource.external_url
+    // Check if external_url is relative or absolute
+    let finalUrl = resource.external_url
+    if (resource.external_url.startsWith('/') && !resource.external_url.startsWith('//')) {
+      // It's a relative path, prepend API_BASE_URL
+      finalUrl = `${API_BASE_URL}${resource.external_url}`
+    }
+    console.log('🔗 Using external_url:', resource.external_url, '→', finalUrl)
+    
+    // Test the URL by trying to fetch it
+    fetch(finalUrl, { method: 'HEAD' })
+      .then(response => {
+        console.log('🌐 URL test response:', response.status, response.headers.get('content-type'))
+      })
+      .catch(error => {
+        console.error('❌ URL test failed:', error)
+      })
+    
+    return finalUrl
   }
   
   if (resource.url) {

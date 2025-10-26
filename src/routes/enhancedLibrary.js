@@ -60,15 +60,22 @@ router.post('/upload', authenticateToken, requireRole(['admin', 'librarian']), u
     const { type, title, category } = req.body;
     const file = req.file;
     
-    // Generate file URL (you may want to store files in a proper file storage service)
+    // Generate file URL (relative path for database storage)
     const fileUrl = `/uploads/${file.filename}`;
+    
+    console.log('📁 File uploaded:', {
+      filename: file.filename,
+      originalname: file.originalname,
+      fileUrl: fileUrl,
+      path: file.path
+    });
     
     res.json({
       success: true,
       message: 'File uploaded successfully',
       file_url: fileUrl,
       url: fileUrl,
-      file_path: file.path,
+      file_path: file.filename, // Store just filename, not full path
       original_name: file.originalname,
       size: file.size,
       mimetype: file.mimetype
