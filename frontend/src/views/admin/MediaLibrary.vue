@@ -570,6 +570,7 @@ interface MediaResource {
   media_type: string
   category?: string
   url?: string
+  external_url?: string
   thumbnail_url?: string
   file_path?: string
   file_size?: string
@@ -896,6 +897,36 @@ const getFormatFromType = (mediaType: string): string => {
 
 const saveResource = async () => {
   try {
+    let fileUrl = ''
+    let filePath = ''
+    
+    // Step 1: Handle file upload if there's a selected file
+    if (selectedFile.value && uploadMethod.value === 'file') {
+      console.log('📁 Uploading file:', selectedFile.value.name)
+      
+      const formData = new FormData()
+      formData.append('file', selectedFile.value)
+      formData.append('type', resourceForm.value.media_type)
+      formData.append('title', resourceForm.value.title)
+      formData.append('category', resourceForm.value.category || '')
+      
+      // Upload file first
+      const uploadResponse = await axios.post(`${API_BASE_URL}/api/library/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (uploadResponse.data.success) {
+        fileUrl = uploadResponse.data.url || uploadResponse.data.file_url
+        filePath = uploadResponse.data.file_path || uploadResponse.data.filename
+        console.log('✅ File uploaded successfully:', fileUrl)
+      } else {
+        throw new Error('File upload failed: ' + uploadResponse.data.message)
+      }
+    }
+    
+    // Step 2: Create or update the media resource
     if (showAddModal.value) {
       const { id, media_type, ...resourceData } = resourceForm.value
       
@@ -906,9 +937,13 @@ const saveResource = async () => {
         format: getFormatFromType(media_type), // Provide required format field
         genre: resourceData.category || 'General', // Map category to genre
         language: 'English', // Default language
-        access_level: 'public' // Default access level
+        access_level: 'public', // Default access level
+        // Add file information if uploaded
+        ...(fileUrl && { external_url: fileUrl }),
+        ...(filePath && { file_path: filePath })
       }
       
+      console.log('💾 Creating media resource with data:', backendData)
       await axios.post(`${API_BASE_URL}/api/library/media-resources`, backendData)
     } else {
       const { id, media_type, ...resourceData } = resourceForm.value
@@ -920,17 +955,22 @@ const saveResource = async () => {
         format: getFormatFromType(media_type), // Provide required format field
         genre: resourceData.category || 'General', // Map category to genre
         language: 'English', // Default language
-        access_level: 'public' // Default access level
+        access_level: 'public', // Default access level
+        // Add file information if uploaded (for updates, only if new file)
+        ...(fileUrl && { external_url: fileUrl }),
+        ...(filePath && { file_path: filePath })
       }
       
+      console.log('✏️ Updating media resource with data:', backendData)
       await axios.put(`${API_BASE_URL}/api/library/media-resources/${id}`, backendData)
     }
     
     closeModal()
     await refreshResources()
-  } catch (error) {
-    console.error('Error saving resource:', error)
-    alert('Error saving resource')
+    console.log('✅ Media resource saved successfully!')
+  } catch (error: any) {
+    console.error('❌ Error saving resource:', error)
+    alert(`Error saving resource: ${error.response?.data?.message || error.message || 'Unknown error'}`)
   }
 }
 
@@ -970,16 +1010,28 @@ const closeViewModal = () => {
 const getMediaUrl = (resource: MediaResource | null): string => {
   if (!resource) return ''
   
-  // If it has a URL, use it directly
+  // Priority order for media URLs:
+  // 1. external_url (for uploaded files via file upload endpoint)
+  // 2. url (for external URLs entered manually)  
+  // 3. file_path (construct from uploads directory)
+  
+  if (resource.external_url) {
+    console.log('🔗 Using external_url:', resource.external_url)
+    return resource.external_url
+  }
+  
   if (resource.url) {
+    console.log('🌐 Using url:', resource.url)
     return resource.url
   }
   
-  // If it has a file_path, construct the URL
   if (resource.file_path) {
-    return `${API_BASE_URL}/uploads/${resource.file_path}`
+    const constructedUrl = `${API_BASE_URL}/uploads/${resource.file_path}`
+    console.log('📁 Using file_path, constructed URL:', constructedUrl)
+    return constructedUrl
   }
   
+  console.warn('❌ No media URL found for resource:', resource)
   return ''
 }
 
