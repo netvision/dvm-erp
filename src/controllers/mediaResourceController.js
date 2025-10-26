@@ -83,12 +83,13 @@ class MediaResourceController {
 
             const query = `
                 SELECT 
-                    id, title, description, type, format, duration_seconds, quality,
-                    language, author, narrator, producer, publication_date, genre,
-                    subjects, keywords, content_rating, age_restriction, view_count,
-                    like_count, access_level, thumbnail_url, preview_url, chapters,
-                    subtitles_available, subtitle_languages, transcript_available,
-                    file_size_bytes, created_at, updated_at
+                    id, title, description, type, format, file_path, external_url,
+                    duration_seconds, quality, language, author, narrator, producer, 
+                    publication_date, genre, subjects, keywords, content_rating, 
+                    age_restriction, view_count, like_count, access_level, 
+                    thumbnail_url, preview_url, chapters, subtitles_available, 
+                    subtitle_languages, transcript_available, file_size_bytes, 
+                    created_at, updated_at
                 FROM media_resources 
                 ${whereClause}
                 ORDER BY ${sortColumn} ${sortOrder}
@@ -360,8 +361,6 @@ class MediaResourceController {
     // Create new media resource (Admin/Librarian only)
     async create(req, res) {
         try {
-            console.log('📥 Creating media resource with body:', req.body);
-            
             const {
                 title,
                 description,
@@ -424,10 +423,6 @@ class MediaResourceController {
                 age_restriction, access_level, external_url, subtitles_available,
                 subtitle_languages, transcript_available, chapters
             ];
-
-            console.log('🔍 SQL Query:', query);
-            console.log('📊 SQL Values:', values);
-            console.log('📋 Values length:', values.length);
 
             const result = await pool.query(query, values);
 
