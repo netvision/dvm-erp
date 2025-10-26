@@ -553,6 +553,86 @@
     </div>
   </div>
 
+  <!-- File Viewer Modal -->
+  <div v-if="showViewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8);" @click="closeViewModal">
+      <!-- Modal content -->
+      <div class="bg-white rounded-lg w-full max-w-6xl max-h-screen overflow-auto" @click.stop>
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+              {{ viewingResource?.title }}
+            </h3>
+            <button 
+              @click="closeViewModal"
+              class="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <span class="sr-only">Close</span>
+              <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div class="mt-2">
+            <!-- PDF Viewer for PDF files -->
+            <div v-if="viewingResource?.type === 'pdf'" class="w-full" style="height: 600px;">
+              <div v-if="viewerLoading" class="flex items-center justify-center h-full">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <span class="ml-2">Loading PDF...</span>
+              </div>
+              <iframe 
+                v-else-if="viewerBlobUrl"
+                :src="viewerBlobUrl"
+                class="w-full h-full border-0 rounded"
+                title="PDF Viewer"
+              ></iframe>
+              <div v-else class="flex items-center justify-center h-full">
+                <p class="text-gray-500">Unable to load PDF for preview</p>
+              </div>
+            </div>
+            
+            <!-- External URL for links -->
+            <div v-else-if="viewingResource?.url" class="w-full" style="height: 600px;">
+              <iframe 
+                :src="viewingResource.url"
+                class="w-full h-full border-0"
+                title="Document Viewer"
+              ></iframe>
+            </div>
+            
+            <!-- Fallback message for unsupported formats -->
+            <div v-else class="text-center py-8">
+              <p class="text-gray-500 mb-4">Preview not available for this file type.</p>
+              <button 
+                @click="downloadResource(viewingResource!)"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <svg class="-ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download File
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button 
+            @click="downloadResource(viewingResource!)"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+          >
+            Download
+          </button>
+          <button 
+            @click="closeViewModal"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+  </div>
+
   <!-- Debug Environment Info -->
   <EnvironmentDebug />
 </div>
@@ -601,6 +681,10 @@ const pageSize = ref(10)
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const savingResource = ref(false)
+const showViewModal = ref(false)
+const viewingResource = ref<DigitalResource | null>(null)
+const viewerLoading = ref(false)
+const viewerBlobUrl = ref<string | null>(null)
 
 // File upload data
 const uploadMethod = ref('file')
@@ -815,14 +899,41 @@ const openResource = (resource: DigitalResource) => {
   }
 }
 
-const viewResource = (resource: DigitalResource) => {
-  if (resource.type === 'pdf' && resource.file_path) {
-    // Open PDF in new tab for viewing
-    window.open(`/api/library/digital-resources/${resource.id}/view`, '_blank')
-  } else if (resource.url) {
-    window.open(resource.url, '_blank')
+const viewResource = async (resource: DigitalResource) => {
+  try {
+    viewerLoading.value = true
+    viewingResource.value = resource
+    showViewModal.value = true
+    
+    if (resource.type === 'pdf' && resource.file_path) {
+      // Fetch the file as blob with authentication
+      const response = await axios.get(`/library/digital-resources/${resource.id}/view`, {
+        responseType: 'blob'
+      })
+      
+      // Create blob URL for iframe
+      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/pdf' })
+      viewerBlobUrl.value = URL.createObjectURL(blob)
+    }
+  } catch (error) {
+    console.error('Error loading file for viewing:', error)
+  } finally {
+    viewerLoading.value = false
   }
 }
+
+const closeViewModal = () => {
+  showViewModal.value = false
+  viewingResource.value = null
+  
+  // Clean up blob URL to prevent memory leaks
+  if (viewerBlobUrl.value) {
+    URL.revokeObjectURL(viewerBlobUrl.value)
+    viewerBlobUrl.value = null
+  }
+}
+
+
 
 const downloadResource = async (resource: DigitalResource) => {
   try {
