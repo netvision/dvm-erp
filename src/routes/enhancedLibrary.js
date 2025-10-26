@@ -126,6 +126,7 @@ router.get('/media-resources/search', authenticateToken, mediaResourceController
 router.get('/media-resources/:id', authenticateToken, mediaResourceController.getById);
 router.get('/media-resources/:id/stream', authenticateToken, mediaResourceController.stream);
 router.post('/media-resources', authenticateToken, requireRole(['admin', 'librarian']), mediaResourceController.create);
+router.post('/media-resources/generate-description', authenticateToken, requireRole(['admin', 'librarian']), mediaResourceController.generateDescription);
 router.put('/media-resources/:id', authenticateToken, requireRole(['admin', 'librarian']), mediaResourceController.update);
 router.delete('/media-resources/:id', authenticateToken, requireRole(['admin', 'librarian']), mediaResourceController.delete);
 router.post('/media-resources/:id/progress', authenticateToken, mediaResourceController.updateProgress);
