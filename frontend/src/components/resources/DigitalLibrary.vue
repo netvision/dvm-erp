@@ -342,8 +342,6 @@ const formatDate = (dateString: string) => {
 }
 
 const downloadResource = async (resource: any) => {
-  console.log('Downloading:', resource.title)
-  
   try {
     // Use the proper API endpoint for download
     const response = await axios.get(`/library/digital-resources/${resource.id}/download`, {

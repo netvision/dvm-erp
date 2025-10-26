@@ -831,14 +831,29 @@ const downloadResource = async (resource: DigitalResource) => {
       responseType: 'blob'
     })
     
-    // Create download link
-    const url = window.URL.createObjectURL(new Blob([response.data]))
+    // Create blob URL and download with correct MIME type
+    const contentType = response.headers['content-type'] || 'application/pdf'
+    const blob = new Blob([response.data], { type: contentType })
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = resource.title || `resource-${resource.id}`
+    
+    // Extract filename from Content-Disposition header or use fallback
+    let filename = `${resource.title}.${resource.format || 'pdf'}`
+    const contentDisposition = response.headers['content-disposition']
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/)
+      if (filenameMatch) {
+        filename = filenameMatch[1]
+      }
+    }
+    link.download = filename
+    
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    
+    // Clean up blob URL
     window.URL.revokeObjectURL(url)
   } catch (error) {
     console.error('Error downloading resource:', error)

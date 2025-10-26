@@ -11,7 +11,7 @@ class User {
     this.phone = userData.phone;
     this.address = userData.address;
     this.student_id = userData.student_id;
-    this.faculty_id = userData.faculty_id;
+    this.employee_id = userData.employee_id;
     this.grade_level = userData.grade_level;
     this.department = userData.department;
     this.is_active = userData.is_active;
@@ -30,7 +30,7 @@ class User {
       phone,
       address,
       student_id,
-      faculty_id,
+      employee_id,
       grade_level,
       department
     } = userData;
@@ -41,14 +41,14 @@ class User {
     const result = await query(`
       INSERT INTO users (
         first_name, last_name, email, password_hash, role, phone, address,
-        student_id, faculty_id, grade_level, department
+        student_id, employee_id, grade_level, department
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id, first_name, last_name, email, role, phone, address,
-                student_id, faculty_id, grade_level, department, is_active,
+                student_id, employee_id, grade_level, department, is_active,
                 created_at, updated_at
     `, [
       first_name, last_name, email, hashedPassword, role, phone, address,
-      student_id, faculty_id, grade_level, department
+      student_id, employee_id, grade_level, department
     ]);
 
     return new User(result.rows[0]);
@@ -72,7 +72,7 @@ class User {
   static async findById(id) {
     const result = await query(
       `SELECT id, first_name, last_name, email, role, phone, address,
-              student_id, faculty_id, grade_level, department, is_active,
+              student_id, employee_id, grade_level, department, is_active,
               created_at, updated_at
        FROM users WHERE id = $1`,
       [id]
@@ -133,7 +133,7 @@ class User {
 
     const result = await query(`
       SELECT id, first_name, last_name, email, role, phone, address,
-             student_id, faculty_id, grade_level, department, is_active,
+             student_id, employee_id, grade_level, department, is_active,
              created_at, updated_at
       FROM users ${whereClause}
       ORDER BY created_at DESC
@@ -175,7 +175,7 @@ class User {
       UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
       RETURNING id, first_name, last_name, email, role, phone, address,
-                student_id, faculty_id, grade_level, department, is_active,
+                student_id, employee_id, grade_level, department, is_active,
                 created_at, updated_at
     `, values);
 
