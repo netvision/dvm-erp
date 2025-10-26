@@ -288,14 +288,117 @@
               </div>
             </div>
 
+            <!-- File Upload Section -->
+            <div class="bg-gray-50 rounded-lg p-4">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Media File Upload</h3>
+              
+              <!-- Upload Method Toggle -->
+              <div class="flex space-x-4 mb-4">
+                <button
+                  type="button"
+                  @click="uploadMethod = 'file'"
+                  :class="uploadMethod === 'file' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-gray-100 text-gray-600 border-gray-300'"
+                  class="px-4 py-2 border rounded-lg font-medium transition-colors"
+                >
+                  Upload File
+                </button>
+                <button
+                  type="button"
+                  @click="uploadMethod = 'url'"
+                  :class="uploadMethod === 'url' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-gray-100 text-gray-600 border-gray-300'"
+                  class="px-4 py-2 border rounded-lg font-medium transition-colors"
+                >
+                  Media URL
+                </button>
+              </div>
+
+              <!-- File Upload -->
+              <div v-if="uploadMethod === 'file'" class="space-y-4">
+                <div
+                  @drop.prevent="handleFileDrop"
+                  @dragover.prevent="isDragOver = true"
+                  @dragleave.prevent="isDragOver = false"
+                  :class="isDragOver ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-green-400'"
+                  class="border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
+                  @click="$refs.fileInput?.click()"
+                >
+                  <div v-if="selectedFile" class="space-y-2">
+                    <div class="flex items-center justify-center">
+                      <component :is="getFileIcon(selectedFile.type)" class="w-12 h-12 text-green-600" />
+                    </div>
+                    <p class="text-sm font-medium text-gray-900">{{ selectedFile.name }}</p>
+                    <p class="text-xs text-gray-500">{{ formatFileSize(selectedFile.size) }}</p>
+                    <button
+                      type="button"
+                      @click.stop="removeSelectedFile"
+                      class="text-red-600 hover:text-red-800 text-sm font-medium"
+                    >
+                      Remove file
+                    </button>
+                  </div>
+                  <div v-else class="space-y-2">
+                    <div class="flex items-center justify-center">
+                      <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                      </svg>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                      <span class="font-medium text-green-600">Click to upload</span> or drag and drop
+                    </p>
+                    <p class="text-xs text-gray-500">MP4, AVI, MOV, MP3, WAV, PDF up to 100MB</p>
+                  </div>
+                </div>
+                <input
+                  ref="fileInput"
+                  type="file"
+                  @change="handleFileSelect"
+                  accept="video/*,audio/*,.pdf,.ppt,.pptx"
+                  class="hidden"
+                />
+              </div>
+
+              <!-- URL Input -->
+              <div v-if="uploadMethod === 'url'" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Media URL</label>
+                  <input
+                    v-model="resourceForm.url"
+                    type="url"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="https://example.com/media-file"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">
+                    Supported: YouTube, Vimeo, direct video/audio links, or any media URL
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Description Section -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-gray-700">Description</label>
+                <button
+                  type="button"
+                  @click="generateMediaDescription"
+                  :disabled="generatingDescription"
+                  class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg v-if="generatingDescription" class="animate-spin -ml-1 mr-2 h-3 w-3 text-green-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <svg v-else class="-ml-1 mr-2 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  {{ generatingDescription ? 'Analyzing...' : '🤖 AI Generate' }}
+                </button>
+              </div>
               <textarea
                 v-model="resourceForm.description"
                 rows="3"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Brief description of the media resource"
+                placeholder="Brief description of the media resource (or click AI Generate to auto-generate)"
               ></textarea>
             </div>
 
@@ -337,6 +440,7 @@ import {
   PlayIcon
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 
 // Type definition
@@ -356,6 +460,12 @@ interface MediaResource {
   is_active?: boolean
 }
 
+// Store initialization
+const authStore = useAuthStore()
+
+// API Configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+
 // Reactive data
 const mediaResources = ref<MediaResource[]>([])
 const loading = ref(false)
@@ -367,6 +477,15 @@ const pageSize = ref(12)
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 
+// File upload data
+const uploadMethod = ref('file')
+const selectedFile = ref<File | null>(null)
+const isDragOver = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+// AI Description Generation
+const generatingDescription = ref(false)
+
 // Form data
 const resourceForm = ref({
   id: null as number | null,
@@ -374,6 +493,7 @@ const resourceForm = ref({
   author: '',
   media_type: '',
   category: '',
+  url: '',
   description: ''
 })
 
@@ -416,7 +536,7 @@ const paginatedResources = computed(() => {
 const refreshResources = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/library/media-resources')
+    const response = await axios.get(`${API_BASE_URL}/api/library/media-resources`)
     mediaResources.value = response.data.data || response.data || []
   } catch (error) {
     console.error('Error fetching media resources:', error)
@@ -450,6 +570,163 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString()
 }
 
+// File upload functions
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0]
+    if (file) {
+      validateAndSetFile(file)
+    }
+  }
+}
+
+const handleFileDrop = (event: DragEvent) => {
+  isDragOver.value = false
+  if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+    const file = event.dataTransfer.files[0]
+    if (file) {
+      validateAndSetFile(file)
+    }
+  }
+}
+
+const validateAndSetFile = (file: File) => {
+  // Check file size (100MB limit for media files)
+  const maxSize = 100 * 1024 * 1024 // 100MB
+  if (file.size > maxSize) {
+    alert('File size exceeds 100MB limit. Please select a smaller file.')
+    return
+  }
+
+  // Check file type
+  const allowedTypes = [
+    'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm',
+    'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a',
+    'application/pdf',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ]
+  
+  if (!allowedTypes.includes(file.type)) {
+    alert('Invalid file type. Please select a video, audio, PDF, or presentation file.')
+    return
+  }
+
+  selectedFile.value = file
+  
+  // Auto-detect media type from file type
+  if (file.type.startsWith('video/')) {
+    resourceForm.value.media_type = 'video'
+  } else if (file.type.startsWith('audio/')) {
+    resourceForm.value.media_type = 'audio'
+  } else if (file.type.includes('presentation') || file.type.includes('powerpoint')) {
+    resourceForm.value.media_type = 'presentation'
+  } else {
+    resourceForm.value.media_type = 'interactive'
+  }
+}
+
+const removeSelectedFile = () => {
+  selectedFile.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+const getFileIcon = (type: string) => {
+  if (type.startsWith('video/')) return VideoCameraIcon
+  if (type.startsWith('audio/')) return SpeakerWaveIcon
+  if (type.includes('presentation') || type.includes('powerpoint')) return PlayCircleIcon
+  return CursorArrowRaysIcon
+}
+
+const formatFileSize = (bytes: number) => {
+  const units = ['B', 'KB', 'MB', 'GB']
+  let unitIndex = 0
+  let fileSize = bytes
+  
+  while (fileSize >= 1024 && unitIndex < units.length - 1) {
+    fileSize /= 1024
+    unitIndex++
+  }
+  
+  return `${fileSize.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+}
+
+// AI Description Generation
+const generateMediaDescription = async () => {
+  if (!resourceForm.value.title && !selectedFile.value && !resourceForm.value.url) {
+    alert('Please provide a title, file, or URL first')
+    return
+  }
+
+  generatingDescription.value = true
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/library/media-resources/generate-description`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      },
+      body: JSON.stringify({
+        title: resourceForm.value.title,
+        author: resourceForm.value.author,
+        media_type: resourceForm.value.media_type,
+        category: resourceForm.value.category,
+        url: resourceForm.value.url,
+        filename: selectedFile.value?.name || ''
+      })
+    })
+
+    const data = await response.json()
+    
+    if (data.success) {
+      resourceForm.value.description = data.description
+      console.log('✅ AI Description generated:', data.description)
+    } else {
+      console.error('❌ AI Description failed:', data.message)
+      // Generate fallback description
+      generateFallbackDescription()
+    }
+  } catch (error) {
+    console.error('Error generating AI description:', error)
+    generateFallbackDescription()
+  } finally {
+    generatingDescription.value = false
+  }
+}
+
+const generateFallbackDescription = () => {
+  const parts = []
+  
+  if (resourceForm.value.title) {
+    parts.push(`"${resourceForm.value.title}" is a ${resourceForm.value.media_type || 'media'} resource`)
+  }
+  
+  if (resourceForm.value.author) {
+    parts.push(`created by ${resourceForm.value.author}`)
+  }
+  
+  if (resourceForm.value.category) {
+    parts.push(`in the ${resourceForm.value.category} category`)
+  }
+  
+  // Add media-specific context
+  if (resourceForm.value.media_type === 'video') {
+    parts.push('This video content provides visual learning and educational material.')
+  } else if (resourceForm.value.media_type === 'audio') {
+    parts.push('This audio content offers listening-based learning and information.')
+  } else if (resourceForm.value.media_type === 'presentation') {
+    parts.push('This presentation material supports teaching and learning activities.')
+  } else if (resourceForm.value.media_type === 'interactive') {
+    parts.push('This interactive media provides engaging and hands-on learning experiences.')
+  }
+  
+  resourceForm.value.description = parts.join('. ') + '.'
+}
+
 const playMedia = (resource: MediaResource) => {
   if (resource.url) {
     window.open(resource.url, '_blank')
@@ -465,6 +742,7 @@ const editResource = (resource: MediaResource) => {
     author: resource.author || '',
     media_type: resource.media_type,
     category: resource.category || '',
+    url: resource.url || '',
     description: resource.description || ''
   }
   showEditModal.value = true
@@ -473,7 +751,7 @@ const editResource = (resource: MediaResource) => {
 const deleteResource = async (resource: MediaResource) => {
   if (confirm(`Are you sure you want to delete "${resource.title}"?`)) {
     try {
-      await axios.delete(`/library/media-resources/${resource.id}`)
+      await axios.delete(`${API_BASE_URL}/api/library/media-resources/${resource.id}`)
       await refreshResources()
     } catch (error) {
       console.error('Error deleting resource:', error)
@@ -486,10 +764,10 @@ const saveResource = async () => {
   try {
     if (showAddModal.value) {
       const { id, ...resourceData } = resourceForm.value
-      await axios.post('/library/media-resources', resourceData)
+      await axios.post(`${API_BASE_URL}/api/library/media-resources`, resourceData)
     } else {
       const { id, ...resourceData } = resourceForm.value
-      await axios.put(`/library/media-resources/${id}`, resourceData)
+      await axios.put(`${API_BASE_URL}/api/library/media-resources/${id}`, resourceData)
     }
     
     closeModal()
@@ -509,7 +787,16 @@ const closeModal = () => {
     author: '',
     media_type: '',
     category: '',
+    url: '',
     description: ''
+  }
+  
+  // Reset file upload state
+  uploadMethod.value = 'file'
+  selectedFile.value = null
+  isDragOver.value = false
+  if (fileInput.value) {
+    fileInput.value.value = ''
   }
 }
 
