@@ -15,7 +15,7 @@ class AuthController {
         phone,
         address,
         student_id,
-        employee_id,
+        faculty_id,
         grade_level,
         department
       } = req.body;
@@ -39,7 +39,7 @@ class AuthController {
         phone,
         address,
         student_id,
-        employee_id,
+        faculty_id,
         grade_level,
         department
       });
