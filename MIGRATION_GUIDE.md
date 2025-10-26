@@ -1,6 +1,39 @@
 # Production Migration Guide
 
-This guide explains how to run the database migration on your live server to add the `external_url` column to the `media_resources` table.
+## Current Critical Issue: Missing employee_id Column
+
+**Problem**: The production database is missing the `employee_id` column in the `users` table, causing 500 errors when users try to update their profiles.
+
+**Solution**: Run the migration script: `database/add_employee_id_column.sql`
+
+### Quick Fix - Run This SQL on Production:
+
+```sql
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' 
+        AND column_name = 'employee_id'
+    ) THEN
+        ALTER TABLE users 
+        ADD COLUMN employee_id VARCHAR(50) UNIQUE;
+        
+        CREATE INDEX IF NOT EXISTS idx_users_employee_id ON users(employee_id);
+        
+        RAISE NOTICE 'Column employee_id added successfully';
+    ELSE
+        RAISE NOTICE 'Column employee_id already exists';
+    END IF;
+END $$;
+```
+
+---
+
+## Previous Migration: external_url Column
+
+This guide also explains how to add the `external_url` column to the `media_resources` table (if not already done).
 
 ## 🚀 Method 1: SSH + Node.js (Recommended)
 
