@@ -360,6 +360,8 @@ class MediaResourceController {
     // Create new media resource (Admin/Librarian only)
     async create(req, res) {
         try {
+            console.log('📥 Creating media resource with body:', req.body);
+            
             const {
                 title,
                 description,
@@ -422,6 +424,10 @@ class MediaResourceController {
                 age_restriction, access_level, external_url, subtitles_available,
                 subtitle_languages, transcript_available, chapters
             ];
+
+            console.log('🔍 SQL Query:', query);
+            console.log('📊 SQL Values:', values);
+            console.log('📋 Values length:', values.length);
 
             const result = await pool.query(query, values);
 
