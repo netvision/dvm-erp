@@ -694,6 +694,9 @@ interface DigitalResource {
 // Store initialization
 const authStore = useAuthStore()
 
+// API Configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+
 // Reactive data
 const digitalResources = ref<DigitalResource[]>([])
 const loading = ref(false)
@@ -985,7 +988,7 @@ const generateAIDescription = async () => {
       formData.append('category', resourceForm.value.category || '')
       formData.append('type', resourceForm.value.type || '')
 
-      const response = await fetch('/api/library/digital-resources/analyze-content', {
+      const response = await fetch(`${API_BASE_URL}/api/library/digital-resources/analyze-content`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authStore.token}`
@@ -1032,7 +1035,7 @@ const generateAIDescription = async () => {
       // Fall back to metadata-based analysis
       console.log('📝 Using metadata-based analysis')
       
-      const response = await fetch('/api/library/digital-resources/generate-description', {
+      const response = await fetch(`${API_BASE_URL}/api/library/digital-resources/generate-description`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
