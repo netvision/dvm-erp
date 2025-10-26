@@ -365,18 +365,18 @@ class DigitalResourceController {
             console.log('📁 Sending file from:', absolutePath);
             
             // Try alternative approach: read and pipe the file
-            const fs = require('fs');
-            if (!fs.existsSync(absolutePath)) {
+            const fsSync = require('fs');
+            if (!fsSync.existsSync(absolutePath)) {
                 return res.status(404).json({
                     success: false,
                     message: 'File not found'
                 });
             }
             
-            const stat = fs.statSync(absolutePath);
+            const stat = fsSync.statSync(absolutePath);
             res.setHeader('Content-Length', stat.size);
             
-            const readStream = fs.createReadStream(absolutePath);
+            const readStream = fsSync.createReadStream(absolutePath);
             readStream.on('error', (err) => {
                 console.error('❌ Error reading file:', err);
                 if (!res.headersSent) {
