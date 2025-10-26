@@ -883,7 +883,7 @@ class DigitalResourceController {
                 title,
                 description = '',
                 genre = 'General',
-                access_level = 'all',
+                access_level = 'public',
                 language = 'English',
                 keywords = ''
             } = req.body;
@@ -1043,7 +1043,7 @@ class DigitalResourceController {
                 format,
                 category,
                 description = '',
-                access_level = 'all',
+                access_level = 'public',
                 language = 'English'
             } = req.body;
             
@@ -1122,7 +1122,7 @@ class DigitalResourceController {
                 format,
                 category,
                 description,
-                access_level = 'all',
+                access_level = 'public',
                 language = 'English'
             } = req.body;
             
