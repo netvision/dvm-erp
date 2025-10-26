@@ -85,14 +85,14 @@
         <!-- Action Buttons -->
         <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
           <button
-            @click="showEditModal = true"
+            @click="openEditModal"
             class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             <PencilIcon class="w-4 h-4 mr-2" />
             Edit Profile
           </button>
           <button
-            @click="showPasswordModal = true"
+            @click="openPasswordModal"
             class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             <KeyIcon class="w-4 h-4 mr-2" />
@@ -389,6 +389,7 @@ const showNotification = (message: string, type: 'success' | 'error' = 'success'
 
 // Initialize profile form with current user data
 const initializeProfileForm = () => {
+  console.log('🔄 Initializing profile form with user data:', authStore.user)
   if (authStore.user) {
     profileForm.value = {
       first_name: authStore.user.first_name || '',
@@ -396,7 +397,22 @@ const initializeProfileForm = () => {
       phone: authStore.user.phone || '',
       address: authStore.user.address || ''
     }
+    console.log('📋 Profile form initialized:', profileForm.value)
+  } else {
+    console.warn('⚠️ No user data available to initialize form')
   }
+}
+
+// Modal open functions
+const openEditModal = () => {
+  console.log('🔓 Opening edit profile modal')
+  initializeProfileForm() // Ensure form has latest data
+  showEditModal.value = true
+}
+
+const openPasswordModal = () => {
+  console.log('🔓 Opening change password modal')
+  showPasswordModal.value = true
 }
 
 // Profile edit functions
@@ -408,17 +424,21 @@ const closeEditModal = () => {
 const saveProfile = async () => {
   if (!authStore.user) return
   
+  console.log('💾 Saving profile with data:', profileForm.value)
+  
   saving.value = true
   try {
-    await axios.put('/auth/profile', profileForm.value)
+    const response = await axios.put('/auth/profile', profileForm.value)
+    console.log('✅ Profile update response:', response.data)
     
     // Update the auth store with new user data
     await authStore.initializeAuth()
     
     showEditModal.value = false
     showNotification('Profile updated successfully!')
-  } catch (error) {
-    console.error('Error updating profile:', error)
+  } catch (error: any) {
+    console.error('❌ Error updating profile:', error)
+    console.error('Error response:', error.response?.data)
     showNotification('Error updating profile. Please try again.', 'error')
   } finally {
     saving.value = false
@@ -436,28 +456,44 @@ const closePasswordModal = () => {
 }
 
 const savePassword = async () => {
+  console.log('🔐 Attempting to change password')
+  
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    console.warn('⚠️ Password mismatch')
     showNotification('New passwords do not match!', 'error')
     return
   }
 
   if (passwordForm.value.newPassword.length < 6) {
+    console.warn('⚠️ Password too short')
     showNotification('New password must be at least 6 characters long!', 'error')
     return
   }
 
   changingPassword.value = true
   try {
-    await axios.put('/auth/change-password', {
+    const payload = {
       current_password: passwordForm.value.currentPassword,
       new_password: passwordForm.value.newPassword
-    })
+    }
+    console.log('📤 Sending password change request')
+    
+    const response = await axios.put('/auth/change-password', payload)
+    console.log('✅ Password changed successfully:', response.data)
     
     showPasswordModal.value = false
+    passwordForm.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
     showNotification('Password changed successfully!')
   } catch (error: any) {
-    console.error('Error changing password:', error)
+    console.error('❌ Error changing password:', error)
+    console.error('Error response:', error.response?.data)
     if (error.response?.status === 400) {
+      showNotification('Current password is incorrect!', 'error')
+    } else if (error.response?.status === 401) {
       showNotification('Current password is incorrect!', 'error')
     } else {
       showNotification('Error changing password. Please try again.', 'error')
