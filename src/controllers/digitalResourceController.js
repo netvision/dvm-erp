@@ -3,6 +3,7 @@ const pool = require('../config/database');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
+const pdfParse = require('pdf-parse');
 
 class DigitalResourceController {
     // Get all digital resources with filtering and pagination
@@ -716,6 +717,198 @@ class DigitalResourceController {
         }
     }
 
+    // Generate AI description for digital resource
+    async generateDescription(req, res) {
+        try {
+            const { title, filename, fileType, category, type, url, author } = req.body;
+
+            // Generate context-aware description using simple AI logic
+            const descriptions = [];
+            
+            // Base description based on type and format
+            const typeDescriptions = {
+                'pdf': 'a comprehensive PDF document',
+                'ebook': 'an electronic book',
+                'journal': 'a scholarly journal article',
+                'article': 'an informative article',
+                'research_paper': 'a detailed research paper',
+                'thesis': 'an academic thesis',
+                'report': 'a detailed report',
+                'manual': 'an instructional manual',
+                'guide': 'a practical guide'
+            };
+
+            const categoryDescriptions = {
+                'Academic': 'for academic study and research',
+                'Fiction': 'offering engaging fictional content',
+                'Non-Fiction': 'providing factual information and insights',
+                'Technical': 'containing technical information and specifications',
+                'Reference': 'serving as a valuable reference resource',
+                'Educational': 'designed for educational purposes',
+                'Research': 'supporting research and scholarly activities',
+                'Professional': 'for professional development and practice'
+            };
+
+            // Start with the resource type
+            if (title) {
+                descriptions.push(`"${title}" is ${typeDescriptions[type] || 'a digital resource'}`);
+            } else if (filename) {
+                const cleanName = filename.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ');
+                descriptions.push(`"${cleanName}" is ${typeDescriptions[type] || 'a digital resource'}`);
+            } else {
+                descriptions.push(`This is ${typeDescriptions[type] || 'a digital resource'}`);
+            }
+
+            // Add category context
+            if (category && categoryDescriptions[category]) {
+                descriptions.push(categoryDescriptions[category]);
+            }
+
+            // Add author context
+            if (author) {
+                descriptions.push(`created by ${author}`);
+            }
+
+            // Add file-specific context
+            if (fileType) {
+                if (fileType.includes('pdf')) {
+                    descriptions.push('featuring searchable text and professional formatting');
+                } else if (fileType.includes('word') || fileType.includes('document')) {
+                    descriptions.push('in an editable document format');
+                } else if (fileType.includes('image')) {
+                    descriptions.push('containing visual content and illustrations');
+                }
+            }
+
+            // Add subject-specific enhancements based on title keywords
+            if (title) {
+                const titleLower = title.toLowerCase();
+                if (titleLower.includes('introduction') || titleLower.includes('basics')) {
+                    descriptions.push('Perfect for beginners and those seeking foundational knowledge.');
+                } else if (titleLower.includes('advanced') || titleLower.includes('expert')) {
+                    descriptions.push('Designed for advanced learners and professionals.');
+                } else if (titleLower.includes('handbook') || titleLower.includes('manual')) {
+                    descriptions.push('Serving as a comprehensive reference and practical guide.');
+                } else if (titleLower.includes('theory') || titleLower.includes('principles')) {
+                    descriptions.push('Exploring fundamental theories and core principles.');
+                } else if (titleLower.includes('practical') || titleLower.includes('application')) {
+                    descriptions.push('Focusing on practical applications and real-world usage.');
+                }
+            }
+
+            // Add general value proposition
+            descriptions.push('This resource provides valuable insights and information for readers interested in the subject matter.');
+
+            // Combine descriptions into coherent text
+            let description = descriptions[0];
+            if (descriptions.length > 1) {
+                description += ' ' + descriptions.slice(1, -1).join(', ');
+                if (descriptions.length > 2) {
+                    description += ', and ' + descriptions[descriptions.length - 1];
+                } else if (descriptions.length === 2) {
+                    description += ' ' + descriptions[1];
+                }
+            }
+
+            res.json({
+                success: true,
+                description: description
+            });
+        } catch (error) {
+            console.error('Error generating AI description:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error generating description',
+                error: error.message
+            });
+        }
+    }
+
+    // Analyze file content for smart description generation
+    async analyzeFileContent(req, res) {
+        try {
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No file provided for analysis'
+                });
+            }
+
+            const { title, author, category, type } = req.body;
+            const file = req.file;
+            let extractedText = '';
+
+            console.log('📄 Analyzing file:', file.originalname, 'Type:', file.mimetype);
+
+            // Extract content based on file type
+            if (file.mimetype === 'application/pdf') {
+                try {
+                    const pdfBuffer = await fs.readFile(file.path);
+                    const pdfData = await pdfParse(pdfBuffer);
+                    extractedText = pdfData.text;
+                    console.log('📖 Extracted PDF text length:', extractedText.length);
+                } catch (pdfError) {
+                    console.log('❌ PDF parsing failed:', pdfError.message);
+                    // Fall back to metadata-based generation
+                }
+            }
+
+            // Extract metadata from content
+            const extractedMetadata = extractedText.length > 0 
+                ? extractMetadataFromContent(extractedText, file.originalname)
+                : {};
+
+            // Use extracted metadata if not provided
+            const finalTitle = title || extractedMetadata.title || '';
+            const finalAuthor = author || extractedMetadata.author || '';
+            const finalCategory = category || extractedMetadata.category || '';
+            const finalType = type || extractedMetadata.type || '';
+
+            console.log('🔍 Extracted Metadata:', extractedMetadata);
+
+            // Generate intelligent description based on content
+            const description = await generateContentBasedDescription({
+                title: finalTitle,
+                author: finalAuthor,
+                category: finalCategory,
+                type: finalType,
+                filename: file.originalname,
+                fileType: file.mimetype,
+                extractedText,
+                fileSize: file.size
+            });
+
+            // Clean up uploaded file
+            try {
+                await fs.unlink(file.path);
+            } catch (unlinkError) {
+                console.log('⚠️ Could not delete temp file:', unlinkError.message);
+            }
+
+            res.json({
+                success: true,
+                description: description,
+                contentLength: extractedText.length,
+                analysisType: extractedText.length > 0 ? 'content-based' : 'metadata-based',
+                extractedMetadata: {
+                    title: finalTitle,
+                    author: finalAuthor,
+                    category: finalCategory,
+                    type: finalType
+                }
+            });
+        } catch (error) {
+            console.error('Error analyzing file content:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error analyzing file content',
+                error: error.message
+            });
+        }
+    }
+
+
+
     // Add bookmark
     async addBookmark(req, res) {
         try {
@@ -1315,6 +1508,326 @@ class DigitalResourceController {
         };
         return mimeTypes[format] || 'application/octet-stream';
     }
+}
+
+// Extract metadata from PDF content
+function extractMetadataFromContent(text, filename) {
+    const metadata = {};
+    const firstPage = text.substring(0, Math.min(2000, text.length)); // First 2000 characters
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    console.log('🔍 Starting metadata extraction...');
+
+    // Extract Title (multiple strategies)
+    let extractedTitle = '';
+    
+    // Strategy 1: Look for title patterns in first few lines
+    const titlePatterns = [
+        /^(.{3,60})$/m, // First substantial line
+        /title[:\s]*(.{3,100})/i,
+        /^[A-Z][A-Za-z\s]{10,80}$/m, // Capitalized lines that could be titles
+    ];
+
+    for (let i = 0; i < Math.min(10, lines.length) && !extractedTitle; i++) {
+        const line = lines[i];
+        if (line.length > 10 && line.length < 100 && 
+            !line.toLowerCase().includes('page') &&
+            !line.toLowerCase().includes('chapter') &&
+            !line.match(/^\d+/) && // Not starting with numbers
+            line.split(' ').length > 2) { // More than 2 words
+            extractedTitle = line;
+            break;
+        }
+    }
+
+    // Strategy 2: Look for title in filename
+    if (!extractedTitle && filename) {
+        const cleanFilename = filename.replace(/\.[^/.]+$/, "") // Remove extension
+                                    .replace(/[_-]/g, ' ') // Replace underscores/hyphens with spaces
+                                    .replace(/\b\w/g, l => l.toUpperCase()); // Title case
+        if (cleanFilename.length > 5) {
+            extractedTitle = cleanFilename;
+        }
+    }
+
+    if (extractedTitle) {
+        metadata.title = extractedTitle.trim();
+        console.log('📖 Extracted Title:', metadata.title);
+    }
+
+    // Extract Author (multiple strategies)
+    let extractedAuthor = '';
+    
+    const authorPatterns = [
+        /(?:by|author|written by|autor)[:\s]+([A-Za-z\s\.]{3,50})/i,
+        /([A-Z][a-z]+\s+[A-Z][a-z]+)/g, // Name patterns like "John Smith"
+        /^([A-Z][a-z]+(?:\s+[A-Z][a-z]*\.?\s*)*[A-Z][a-z]+)$/m, // Full name patterns on separate lines
+    ];
+
+    // Look in first 500 characters for author
+    const authorSearchText = firstPage.toLowerCase();
+    
+    for (const pattern of authorPatterns) {
+        const matches = firstPage.match(pattern);
+        if (matches) {
+            if (pattern.global) {
+                // For global patterns, find the most likely author name
+                const candidates = matches.filter(match => 
+                    match.length > 5 && 
+                    match.length < 50 &&
+                    match.split(' ').length >= 2 &&
+                    !match.toLowerCase().includes('university') &&
+                    !match.toLowerCase().includes('press') &&
+                    !match.toLowerCase().includes('publisher')
+                );
+                if (candidates.length > 0) {
+                    extractedAuthor = candidates[0];
+                    break;
+                }
+            } else {
+                extractedAuthor = matches[1] || matches[0];
+                break;
+            }
+        }
+    }
+
+    if (extractedAuthor) {
+        metadata.author = extractedAuthor.trim();
+        console.log('👤 Extracted Author:', metadata.author);
+    }
+
+    // Extract Category/Subject
+    let extractedCategory = '';
+    
+    const categoryKeywords = {
+        'Academic': ['research', 'study', 'analysis', 'theory', 'methodology', 'abstract', 'conclusion', 'bibliography'],
+        'Technical': ['manual', 'guide', 'specification', 'implementation', 'system', 'technical', 'documentation'],
+        'Educational': ['learning', 'education', 'teaching', 'student', 'course', 'lesson', 'tutorial', 'exercise'],
+        'Literature': ['novel', 'story', 'fiction', 'poetry', 'literature', 'narrative', 'character'],
+        'Philosophy': ['philosophy', 'philosophical', 'wisdom', 'consciousness', 'spiritual', 'meditation', 'truth'],
+        'Science': ['science', 'scientific', 'experiment', 'hypothesis', 'data', 'research', 'laboratory'],
+        'Business': ['business', 'management', 'strategy', 'market', 'finance', 'economic', 'corporate'],
+        'Health': ['health', 'medical', 'medicine', 'treatment', 'therapy', 'wellness', 'nutrition']
+    };
+
+    const textSample = text.substring(0, 5000).toLowerCase();
+    let maxMatches = 0;
+    
+    for (const [category, keywords] of Object.entries(categoryKeywords)) {
+        const matches = keywords.filter(keyword => textSample.includes(keyword)).length;
+        if (matches > maxMatches) {
+            maxMatches = matches;
+            extractedCategory = category;
+        }
+    }
+
+    if (extractedCategory && maxMatches >= 2) {
+        metadata.category = extractedCategory;
+        console.log('📚 Extracted Category:', metadata.category);
+    }
+
+    // Extract Type
+    let extractedType = 'pdf'; // Default
+    
+    const typeIndicators = {
+        'research_paper': ['abstract', 'methodology', 'results', 'conclusion', 'references', 'bibliography'],
+        'textbook': ['chapter', 'exercises', 'problems', 'solutions', 'appendix'],
+        'manual': ['manual', 'guide', 'instructions', 'procedures', 'steps'],
+        'journal': ['journal', 'volume', 'issue', 'article'],
+        'ebook': ['novel', 'story', 'fiction', 'book', 'chapter']
+    };
+
+    const sampleText = text.substring(0, 3000).toLowerCase();
+    let maxTypeMatches = 0;
+    
+    for (const [type, indicators] of Object.entries(typeIndicators)) {
+        const matches = indicators.filter(indicator => sampleText.includes(indicator)).length;
+        if (matches > maxTypeMatches) {
+            maxTypeMatches = matches;
+            extractedType = type;
+        }
+    }
+
+    metadata.type = extractedType;
+    console.log('📄 Extracted Type:', metadata.type);
+
+    return metadata;
+}
+
+// Generate content-based description using extracted text (standalone function)
+async function generateContentBasedDescription({ title, author, category, type, filename, fileType, extractedText, fileSize }) {
+    const descriptions = [];
+    let keywords = [];
+    let documentType = 'document';
+    let complexity = 'intermediate';
+    let subjects = [];
+
+    // Analyze extracted text for insights
+    if (extractedText && extractedText.length > 100) {
+        const text = extractedText.toLowerCase();
+        const words = text.split(/\s+/).filter(word => word.length > 3);
+        const wordCount = words.length;
+
+        // Detect document type from content patterns
+        if (text.includes('abstract') && text.includes('introduction') && text.includes('methodology')) {
+            documentType = 'research paper';
+        } else if (text.includes('chapter') && (text.includes('exercise') || text.includes('problem'))) {
+            documentType = 'textbook';
+        } else if (text.includes('tutorial') || text.includes('step by step') || text.includes('how to')) {
+            documentType = 'tutorial guide';
+        } else if (text.includes('reference') || text.includes('appendix') && text.includes('index')) {
+            documentType = 'reference manual';
+        } else if (text.includes('introduction to') || text.includes('basics of')) {
+            documentType = 'introductory guide';
+        }
+
+        // Determine complexity level
+        const complexityIndicators = {
+            beginner: ['introduction', 'basics', 'beginner', 'getting started', 'fundamentals', 'overview'],
+            intermediate: ['intermediate', 'practical', 'application', 'examples', 'implementation'],
+            advanced: ['advanced', 'expert', 'complex', 'sophisticated', 'in-depth', 'comprehensive']
+        };
+
+        for (const [level, indicators] of Object.entries(complexityIndicators)) {
+            if (indicators.some(indicator => text.includes(indicator))) {
+                complexity = level;
+                break;
+            }
+        }
+
+        // Extract key subjects and topics
+        const subjectPatterns = [
+            /(?:about|on|regarding|concerning)\s+([a-zA-Z\s]{3,30})/g,
+            /(?:study of|analysis of|overview of)\s+([a-zA-Z\s]{3,30})/g,
+            /(?:introduction to|guide to)\s+([a-zA-Z\s]{3,30})/g
+        ];
+
+        subjectPatterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(text)) !== null && subjects.length < 3) {
+                const subject = match[1].trim().replace(/\s+/g, ' ');
+                if (subject.length > 3 && subject.length < 30) {
+                    subjects.push(subject);
+                }
+            }
+        });
+
+        // Extract keywords (most frequent meaningful words)
+        const stopWords = new Set(['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 'did', 'may', 'put', 'say', 'she', 'too', 'use']);
+        
+        const wordFreq = {};
+        words.forEach(word => {
+            if (!stopWords.has(word) && word.length > 4) {
+                wordFreq[word] = (wordFreq[word] || 0) + 1;
+            }
+        });
+
+        keywords = Object.entries(wordFreq)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 5)
+            .map(([word]) => word);
+
+        console.log('📊 Content Analysis Results:', {
+            documentType,
+            complexity,
+            wordCount,
+            subjects: subjects.slice(0, 3),
+            topKeywords: keywords
+        });
+    }
+
+    // Build intelligent description
+    const docTypeDescriptions = {
+        'research paper': 'a scholarly research paper',
+        'textbook': 'an educational textbook',
+        'tutorial guide': 'a practical tutorial guide',
+        'reference manual': 'a comprehensive reference manual',
+        'introductory guide': 'an introductory guide',
+        'document': 'a document'
+    };
+
+    // Start with title and document type
+    if (title) {
+        descriptions.push(`"${title}" is ${docTypeDescriptions[documentType] || 'a digital resource'}`);
+    } else if (filename) {
+        const cleanName = filename.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ');
+        descriptions.push(`"${cleanName}" is ${docTypeDescriptions[documentType] || 'a digital resource'}`);
+    }
+
+    // Add author
+    if (author) {
+        descriptions.push(`authored by ${author}`);
+    }
+
+    // Add content-based insights
+    if (extractedText && extractedText.length > 100) {
+        const wordCount = extractedText.split(/\s+/).length;
+        
+        if (complexity === 'beginner') {
+            descriptions.push('designed for beginners and newcomers to the subject');
+        } else if (complexity === 'advanced') {
+            descriptions.push('tailored for advanced learners and professionals');
+        } else {
+            descriptions.push('suitable for intermediate-level readers');
+        }
+
+        // Add subject matter
+        if (subjects.length > 0) {
+            descriptions.push(`covering topics including ${subjects.slice(0, 2).join(' and ')}`);
+        }
+
+        // Add content characteristics
+        if (wordCount > 10000) {
+            descriptions.push('This comprehensive resource provides in-depth coverage');
+        } else if (wordCount > 5000) {
+            descriptions.push('This detailed resource offers thorough explanations');
+        } else {
+            descriptions.push('This concise resource provides essential information');
+        }
+
+        // Add keywords context
+        if (keywords.length > 0) {
+            descriptions.push(`with focus on ${keywords.slice(0, 3).join(', ')}`);
+        }
+    } else {
+        // Fallback to metadata-based description
+        const typeDescriptions = {
+            'pdf': 'featuring professional formatting and searchable content',
+            'ebook': 'in digital format for convenient reading',
+            'journal': 'presenting scholarly research and findings',
+            'article': 'providing focused information on the topic'
+        };
+
+        if (typeDescriptions[type]) {
+            descriptions.push(typeDescriptions[type]);
+        }
+    }
+
+    // Add category context
+    const categoryContext = {
+        'Academic': 'supporting academic study and research',
+        'Technical': 'providing technical insights and specifications',
+        'Educational': 'designed for educational purposes',
+        'Professional': 'oriented towards professional development'
+    };
+
+    if (category && categoryContext[category]) {
+        descriptions.push(categoryContext[category]);
+    }
+
+    // Add closing statement
+    descriptions.push('This resource serves as a valuable addition to any digital library collection.');
+
+    // Combine into coherent description
+    let result = descriptions[0];
+    if (descriptions.length > 1) {
+        result += '. ' + descriptions.slice(1, -1).join(', ');
+        if (descriptions.length > 2) {
+            result += ', ' + descriptions[descriptions.length - 1];
+        }
+    }
+
+    return result;
 }
 
 module.exports = new DigitalResourceController();

@@ -521,13 +521,33 @@
 
             <!-- Description Section -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-gray-700">Description</label>
+                <button
+                  type="button"
+                  @click="generateAIDescription"
+                  :disabled="generatingDescription"
+                  class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg v-if="generatingDescription" class="animate-spin -ml-1 mr-2 h-3 w-3 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <svg v-else class="-ml-1 mr-2 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  {{ generatingDescription ? (selectedFile ? 'Analyzing PDF...' : 'Generating...') : '🤖 AI Generate' }}
+                </button>
+              </div>
               <textarea
                 v-model="resourceForm.description"
                 rows="3"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Brief description of the resource"
+                placeholder="Brief description of the resource (or click AI Generate to auto-generate)"
               ></textarea>
+              <div v-if="aiDescriptionError" class="mt-1 text-sm text-red-600">
+                {{ aiDescriptionError }}
+              </div>
             </div>
 
             <!-- Action Buttons -->
@@ -652,6 +672,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import EnvironmentDebug from '@/components/debug/EnvironmentDebug.vue'
+import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 
 // Type definition
@@ -670,6 +691,9 @@ interface DigitalResource {
   is_active?: boolean
 }
 
+// Store initialization
+const authStore = useAuthStore()
+
 // Reactive data
 const digitalResources = ref<DigitalResource[]>([])
 const loading = ref(false)
@@ -685,6 +709,10 @@ const showViewModal = ref(false)
 const viewingResource = ref<DigitalResource | null>(null)
 const viewerLoading = ref(false)
 const viewerBlobUrl = ref<string | null>(null)
+
+// AI Description Generation
+const generatingDescription = ref(false)
+const aiDescriptionError = ref('')
 
 // File upload data
 const uploadMethod = ref('file')
@@ -931,6 +959,146 @@ const closeViewModal = () => {
     URL.revokeObjectURL(viewerBlobUrl.value)
     viewerBlobUrl.value = null
   }
+}
+
+// AI Description Generation with Content Analysis
+const generateAIDescription = async () => {
+  if (!selectedFile.value && !resourceForm.value.title && !resourceForm.value.url) {
+    aiDescriptionError.value = 'Please provide a file, title, or URL first'
+    return
+  }
+
+  generatingDescription.value = true
+  aiDescriptionError.value = ''
+
+  try {
+    let description = ''
+    
+    // If file is selected, use content-based analysis
+    if (selectedFile.value) {
+      console.log('📄 Using content-based analysis for file:', selectedFile.value.name)
+      
+      const formData = new FormData()
+      formData.append('file', selectedFile.value)
+      formData.append('title', resourceForm.value.title || '')
+      formData.append('author', resourceForm.value.author || '')
+      formData.append('category', resourceForm.value.category || '')
+      formData.append('type', resourceForm.value.type || '')
+
+      const response = await fetch('/api/library/digital-resources/analyze-content', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`
+        },
+        body: formData
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        description = data.description
+        console.log('✅ Content-based AI Description generated:', data.description)
+        console.log('📊 Analysis type:', data.analysisType, '| Content length:', data.contentLength)
+        
+        // Auto-fill extracted metadata if fields are empty
+        if (data.extractedMetadata) {
+          console.log('🔍 Auto-filling extracted metadata:', data.extractedMetadata)
+          
+          if (!resourceForm.value.title && data.extractedMetadata.title) {
+            resourceForm.value.title = data.extractedMetadata.title
+            console.log('📖 Auto-filled title:', data.extractedMetadata.title)
+          }
+          
+          if (!resourceForm.value.author && data.extractedMetadata.author) {
+            resourceForm.value.author = data.extractedMetadata.author
+            console.log('👤 Auto-filled author:', data.extractedMetadata.author)
+          }
+          
+          if (!resourceForm.value.category && data.extractedMetadata.category) {
+            resourceForm.value.category = data.extractedMetadata.category
+            console.log('📚 Auto-filled category:', data.extractedMetadata.category)
+          }
+          
+          if (!resourceForm.value.type && data.extractedMetadata.type) {
+            resourceForm.value.type = data.extractedMetadata.type
+            console.log('📄 Auto-filled type:', data.extractedMetadata.type)
+          }
+        }
+      } else {
+        console.error('❌ Content analysis failed:', data.message)
+        throw new Error(data.message)
+      }
+    } else {
+      // Fall back to metadata-based analysis
+      console.log('📝 Using metadata-based analysis')
+      
+      const response = await fetch('/api/library/digital-resources/generate-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authStore.token}`
+        },
+        body: JSON.stringify({
+          title: resourceForm.value.title,
+          author: resourceForm.value.author,
+          category: resourceForm.value.category,
+          type: resourceForm.value.type,
+          url: resourceForm.value.url
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        description = data.description
+        console.log('✅ Metadata-based AI Description generated:', data.description)
+      } else {
+        console.error('❌ Metadata analysis failed:', data.message)
+        throw new Error(data.message)
+      }
+    }
+
+    resourceForm.value.description = description
+  } catch (error) {
+    console.error('Error generating AI description:', error)
+    aiDescriptionError.value = 'Failed to generate description. Please try again.'
+    
+    // Fallback: Generate simple description based on available info
+    generateFallbackDescription()
+  } finally {
+    generatingDescription.value = false
+  }
+}
+
+const generateFallbackDescription = () => {
+  const parts = []
+  
+  if (resourceForm.value.title) {
+    parts.push(`This is a ${resourceForm.value.type || 'digital resource'} titled "${resourceForm.value.title}".`)
+  }
+  
+  if (resourceForm.value.author) {
+    parts.push(`Created by ${resourceForm.value.author}.`)
+  }
+  
+  if (selectedFile.value) {
+    const fileType = selectedFile.value.type
+    if (fileType.includes('pdf')) {
+      parts.push('This PDF document contains valuable information for academic and research purposes.')
+    } else if (fileType.includes('word') || fileType.includes('document')) {
+      parts.push('This document provides detailed information on the subject matter.')
+    } else if (fileType.includes('image')) {
+      parts.push('This image resource provides visual content related to the topic.')
+    } else {
+      parts.push('This file contains relevant information and resources.')
+    }
+  }
+  
+  if (resourceForm.value.category) {
+    parts.push(`Categorized under ${resourceForm.value.category}.`)
+  }
+  
+  resourceForm.value.description = parts.join(' ') || 'A digital resource available in the library system.'
 }
 
 

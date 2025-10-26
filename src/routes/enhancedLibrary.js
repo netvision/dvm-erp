@@ -92,6 +92,8 @@ router.get('/digital-resources/:id/view', authenticateToken, digitalResourceCont
 router.post('/digital-resources/:id/track-view', authenticateToken, digitalResourceController.trackView);
 router.post('/digital-resources/:id/track-download', authenticateToken, digitalResourceController.trackDownload);
 router.post('/digital-resources', authenticateToken, requireRole(['admin', 'librarian']), digitalResourceController.create);
+router.post('/digital-resources/generate-description', authenticateToken, requireRole(['admin', 'librarian']), digitalResourceController.generateDescription);
+router.post('/digital-resources/analyze-content', authenticateToken, requireRole(['admin', 'librarian']), upload.single('file'), digitalResourceController.analyzeFileContent);
 
 // Handle preflight requests for file uploads
 router.options('/digital-resources/upload', (req, res) => {
