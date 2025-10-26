@@ -157,6 +157,11 @@ class AuthController {
   // Update user profile
   static async updateProfile(req, res) {
     try {
+      console.log('📝 Update profile request:', {
+        userId: req.user.id,
+        body: req.body
+      });
+
       const allowedUpdates = ['first_name', 'last_name', 'phone', 'address', 'grade_level', 'department'];
       const updates = {};
 
@@ -167,22 +172,29 @@ class AuthController {
         }
       });
 
+      console.log('✅ Filtered updates:', updates);
+
       if (Object.keys(updates).length === 0) {
+        console.warn('⚠️ No valid fields to update');
         return res.status(400).json({
           status: 'error',
           message: 'No valid fields to update'
         });
       }
 
+      console.log('🔍 Finding user:', req.user.id);
       const user = await User.findById(req.user.id);
       if (!user) {
+        console.error('❌ User not found:', req.user.id);
         return res.status(404).json({
           status: 'error',
           message: 'User not found'
         });
       }
 
+      console.log('💾 Updating user profile...');
       const updatedUser = await user.update(updates);
+      console.log('✅ Profile updated successfully:', updatedUser.toJSON());
 
       logger.info('User profile updated:', { userId: user.id, updates: Object.keys(updates) });
 
@@ -194,10 +206,13 @@ class AuthController {
         }
       });
     } catch (error) {
+      console.error('❌ Update profile error:', error);
+      console.error('Error stack:', error.stack);
       logger.error('Update profile error:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to update profile'
+        message: 'Failed to update profile',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
@@ -205,9 +220,12 @@ class AuthController {
   // Change password
   static async changePassword(req, res) {
     try {
+      console.log('🔐 Change password request:', { userId: req.user.id });
+      
       const { current_password, new_password } = req.body;
 
       if (!current_password || !new_password) {
+        console.warn('⚠️ Missing password fields');
         return res.status(400).json({
           status: 'error',
           message: 'Current password and new password are required'
@@ -215,14 +233,17 @@ class AuthController {
       }
 
       if (new_password.length < 6) {
+        console.warn('⚠️ New password too short');
         return res.status(400).json({
           status: 'error',
           message: 'New password must be at least 6 characters long'
         });
       }
 
+      console.log('🔍 Finding user:', req.user.id);
       const user = await User.findById(req.user.id);
       if (!user) {
+        console.error('❌ User not found:', req.user.id);
         return res.status(404).json({
           status: 'error',
           message: 'User not found'
@@ -230,16 +251,20 @@ class AuthController {
       }
 
       // Verify current password
+      console.log('🔒 Verifying current password...');
       const isCurrentPasswordValid = await user.verifyPassword(current_password);
       if (!isCurrentPasswordValid) {
-        return res.status(400).json({
+        console.warn('⚠️ Current password incorrect');
+        return res.status(401).json({
           status: 'error',
           message: 'Current password is incorrect'
         });
       }
 
       // Change password
+      console.log('💾 Changing password...');
       await user.changePassword(new_password);
+      console.log('✅ Password changed successfully');
 
       logger.info('User password changed:', { userId: user.id, ip: req.ip });
 
@@ -248,10 +273,13 @@ class AuthController {
         message: 'Password changed successfully'
       });
     } catch (error) {
+      console.error('❌ Change password error:', error);
+      console.error('Error stack:', error.stack);
       logger.error('Change password error:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to change password'
+        message: 'Failed to change password',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
