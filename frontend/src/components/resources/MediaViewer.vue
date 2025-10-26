@@ -389,27 +389,15 @@ const fileUrl = computed(() => {
     return props.resource.external_url
   }
   
-  // Handle local files
-  if (props.resource?.file_path) {
-    console.log('Resource file_path:', props.resource.file_path)
-    // Handle both full paths and just filenames
-    const filePath = props.resource.file_path
-    
-    let filename = ''
-    if (filePath.includes('uploads')) {
-      // If it's already a full path, extract just the filename
-      filename = filePath.split('uploads')[1].replace(/^[\\\/]/, '')
-    } else {
-      // If it's just a filename, use it directly
-      filename = filePath
-    }
-    
-    // Use the backend URL directly (backend serves static files from /uploads)
-    const url = `http://localhost:3000/uploads/${filename}`
-    console.log('Generated URL:', url)
+  // Handle local files - use the proper API endpoint
+  if (props.resource?.id) {
+    console.log('Resource ID:', props.resource.id)
+    // Use the same API endpoint as download but for viewing
+    const url = `/api/library/digital-resources/${props.resource.id}/view`
+    console.log('Generated view URL:', url)
     return url
   }
-  console.log('No file_path or external_url found')
+  console.log('No resource ID found')
   return ''
 })
 
@@ -458,60 +446,39 @@ const closeViewer = () => {
 
 const downloadResource = async () => {
   try {
-    // Track download if possible
-    if (props.resource?.id) {
-      try {
-        await axios.post(`/library/digital-resources/${props.resource.id}/track-download`, {}, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-      } catch (trackError) {
-        console.warn('Download tracking failed:', trackError)
-        // Continue with download even if tracking fails
-      }
-    }
+    // Use the proper API endpoint for download
+    const response = await axios.get(`/library/digital-resources/${props.resource.id}/download`, {
+      responseType: 'blob'
+    })
     
-    // For media files, try to download using fetch with proper headers first
-    if (isVideo.value || isAudio.value) {
-      try {
-        const response = await fetch(fileUrl.value, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        
-        if (response.ok) {
-          const blob = await response.blob()
-          const url = window.URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = props.resource?.original_filename || props.resource?.title || 'download'
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.URL.revokeObjectURL(url)
-          return
-        }
-      } catch (fetchError) {
-        console.warn('Authenticated download failed, trying direct download:', fetchError)
-      }
-    }
-    
-    // Fallback to direct download (for when authentication isn't required for static files)
+    // Create blob URL and download with correct MIME type
+    const contentType = response.headers['content-type'] || 'application/pdf'
+    const blob = new Blob([response.data], { type: contentType })
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = fileUrl.value
-    link.download = props.resource?.original_filename || props.resource?.title || 'download'
-    link.target = '_blank' // Open in new tab if download fails
+    link.href = url
+    
+    // Extract filename from Content-Disposition header or use fallback
+    let filename = `${props.resource.title}.${props.resource.format || 'pdf'}`
+    const contentDisposition = response.headers['content-disposition']
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/)
+      if (filenameMatch) {
+        filename = filenameMatch[1]
+      }
+    }
+    link.download = filename
+    
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     
+    // Clean up blob URL
+    window.URL.revokeObjectURL(url)
+    
   } catch (error) {
     console.error('Error downloading resource:', error)
-    // Last resort: open in new tab
-    window.open(fileUrl.value, '_blank')
+    alert(`Cannot download "${props.resource.title}". ${error.response?.data?.message || 'Download failed.'}`)
   }
 }
 
