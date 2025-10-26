@@ -78,6 +78,11 @@ app.use(limiter);
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
+// Determine uploads directory path
+// In production, use absolute path or env var; in development, use relative path
+const uploadsPath = process.env.UPLOADS_PATH || path.join(__dirname, '../uploads');
+logger.info(`📁 Serving uploads from: ${uploadsPath}`);
+
 // Static file serving for uploads with media-friendly headers
 app.use('/uploads', (req, res, next) => {
   // Set headers to support video playback and downloads
@@ -86,7 +91,7 @@ app.use('/uploads', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
   next();
-}, express.static(path.join(__dirname, '../uploads')));
+}, express.static(uploadsPath));
 
 // Logging middleware
 app.use((req, res, next) => {
