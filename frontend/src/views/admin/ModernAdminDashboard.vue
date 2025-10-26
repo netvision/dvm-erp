@@ -1,52 +1,5 @@
 <template>
   <div class="modern-admin-dashboard min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-4xl font-bold mb-2">Library Command Center</h1>
-            <p class="text-lg text-indigo-100">
-              Comprehensive Management • AI-Powered • Real-time Analytics
-            </p>
-          </div>
-          <div class="text-right">
-            <div class="text-3xl font-bold">{{ totalResources.toLocaleString() }}</div>
-            <div class="text-sm text-indigo-200">Total Resources</div>
-            <div class="text-xs text-indigo-300 mt-1">{{ activeUsers }} active users</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Actions Bar -->
-    <div class="bg-white shadow-sm border-b">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div class="flex items-center space-x-4 overflow-x-auto">
-          <button @click="quickScan" class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
-            <QrCodeIcon class="w-5 h-5" />
-            <span>Quick Scan</span>
-          </button>
-          <button @click="addResource" class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap">
-            <PlusIcon class="w-5 h-5" />
-            <span>Add Resource</span>
-          </button>
-          <button @click="openAI" class="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap">
-            <CpuChipIcon class="w-5 h-5" />
-            <span>AI Assistant</span>
-          </button>
-          <button @click="generateReport" class="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors whitespace-nowrap">
-            <DocumentChartBarIcon class="w-5 h-5" />
-            <span>Generate Report</span>
-          </button>
-          <button @click="viewAnalytics" class="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap">
-            <ChartBarIcon class="w-5 h-5" />
-            <span>Analytics</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Statistics Grid -->
@@ -482,9 +435,6 @@ import {
   SparklesIcon,
   ChatBubbleLeftIcon,
   Squares2X2Icon,
-  PlusIcon,
-  QrCodeIcon,
-  DocumentChartBarIcon,
   XMarkIcon
 } from '@heroicons/vue/24/outline'
 
@@ -539,18 +489,11 @@ const popularCollections = ref([
 const pendingReturns = ref(12)
 const activeReservations = ref(8)
 const unpaidFines = ref(245)
-const activeUsers = ref(156)
 const selectedPeriod = ref('7d')
 const showAIChat = ref(false)
 const aiMessage = ref('')
 
 // Computed properties
-const totalResources = computed(() => 
-  (stats.value.physical.total || 0) + 
-  (stats.value.digital.total || 0) + 
-  (stats.value.media.total || 0)
-)
-
 const availabilityPercentage = computed(() => {
   const total = stats.value.physical.total || 1
   return Math.round((stats.value.physical.available / total) * 100)
@@ -595,9 +538,6 @@ const loadDashboardData = async () => {
           recommendations: Math.floor((analyticsData.user_activity.ai_searches || 0) * 0.8)
         }
       }
-
-      // Update active users count
-      activeUsers.value = analyticsData.user_activity.active_users || 0
     }
 
     if (popularRes.status === 'fulfilled') {
@@ -662,8 +602,6 @@ const loadDashboardData = async () => {
       ai: { interactions: 156, satisfaction: 92, recommendations: 78 }
     }
     
-    activeUsers.value = 45
-    
     todayStats.value = {
       newUsers: 3,
       borrowed: 8,
@@ -675,12 +613,6 @@ const loadDashboardData = async () => {
 }
 
 // Quick action methods
-const quickScan = () => router.push('/admin/books') // Navigate to book management for barcode scanning
-const addResource = () => router.push('/admin/books') // Navigate to book management to add new books
-const openAI = () => { showAIChat.value = true }
-const generateReport = () => router.push('/admin/analytics') // Navigate to analytics for report generation
-const viewAnalytics = () => router.push('/admin/analytics')
-
 const manageBooks = () => router.push('/admin/books')
 const manageDigital = () => router.push('/admin/digital-library')
 const manageMedia = () => router.push('/admin/media-library')
