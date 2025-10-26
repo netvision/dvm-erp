@@ -456,13 +456,14 @@
               </button>
             </div>
           </form>
-        </div>
       </div>
     </div>
   </div>
-</template>
 
-<script setup lang="ts">
+  <!-- Debug Environment Info -->
+  <EnvironmentDebug />
+</div>
+</template><script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { 
   PlusIcon, 
@@ -477,6 +478,7 @@ import {
   GlobeAltIcon
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import EnvironmentDebug from '@/components/debug/EnvironmentDebug.vue'
 import axios from 'axios'
 
 // Type definition
