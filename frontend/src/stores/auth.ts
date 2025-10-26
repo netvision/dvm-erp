@@ -21,11 +21,37 @@ interface AuthState {
   isAuthenticated: boolean
 }
 
+// Safe localStorage access
+const getStoredToken = (): string | null => {
+  try {
+    return localStorage.getItem('token')
+  } catch (error) {
+    console.warn('localStorage not available:', error)
+    return null
+  }
+}
+
+const setStoredToken = (token: string): void => {
+  try {
+    localStorage.setItem('token', token)
+  } catch (error) {
+    console.warn('Could not store token:', error)
+  }
+}
+
+const removeStoredToken = (): void => {
+  try {
+    localStorage.removeItem('token')
+  } catch (error) {
+    console.warn('Could not remove token:', error)
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
-    token: localStorage.getItem('token'),
-    isAuthenticated: !!localStorage.getItem('token')
+    token: getStoredToken(),
+    isAuthenticated: !!getStoredToken()
   }),
 
   actions: {
@@ -42,7 +68,7 @@ export const useAuthStore = defineStore('auth', {
         this.token = token
         this.isAuthenticated = true
         
-        localStorage.setItem('token', token)
+        setStoredToken(token)
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
         
         return { success: true }
@@ -64,7 +90,7 @@ export const useAuthStore = defineStore('auth', {
         this.token = token
         this.isAuthenticated = true
         
-        localStorage.setItem('token', token)
+        setStoredToken(token)
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
         
         return { success: true }
@@ -93,12 +119,12 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       this.isAuthenticated = false
       
-      localStorage.removeItem('token')
+      removeStoredToken()
       delete axios.defaults.headers.common['Authorization']
     },
 
     async initializeAuth() {
-      const token = localStorage.getItem('token')
+      const token = getStoredToken()
       if (token) {
         this.token = token
         this.isAuthenticated = true
