@@ -320,8 +320,13 @@
                 v-model="userForm.email"
                 type="email"
                 required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                :disabled="editingUser !== null"
+                :class="[
+                  'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                  editingUser ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
+                ]"
               />
+              <p v-if="editingUser" class="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
             
             <div>
@@ -820,11 +825,10 @@ const saveUser = async () => {
   isSubmitting.value = true
   try {
     if (editingUser.value) {
-      // Update existing user
+      // Update existing user (don't send email - it's not allowed to be changed)
       const updateData: any = {
         first_name: userForm.value.first_name,
         last_name: userForm.value.last_name,
-        email: userForm.value.email,
         role: userForm.value.role
       }
       
