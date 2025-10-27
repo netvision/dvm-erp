@@ -391,48 +391,52 @@ const userForm = ref({
 // Computed
 const totalPages = computed(() => Math.ceil(totalUsers.value / pageSize.value))
 
+// API Base URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 // Methods
 const fetchUsers = async () => {
   try {
     loading.value = true
-    // TODO: Replace with actual API call
-    // Simulate users data
-    users.value = [
-      {
-        id: 1,
-        first_name: 'John',
-        last_name: 'Doe',
-        email: 'admin@school.edu',
-        role: 'admin',
-        phone: '+1234567890',
-        employee_id: 'EMP001',
-        department: 'Administration',
-        is_active: true,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 2,
-        first_name: 'Jane',
-        last_name: 'Smith',
-        email: 'librarian@school.edu',
-        role: 'librarian',
-        phone: '+1234567891',
-        employee_id: 'EMP002',
-        department: 'Library',
-        is_active: true,
-        created_at: new Date().toISOString()
+    
+    const params = new URLSearchParams({
+      page: currentPage.value.toString(),
+      limit: pageSize.value.toString()
+    })
+    
+    if (searchQuery.value) params.append('search', searchQuery.value)
+    if (selectedRole.value) params.append('role', selectedRole.value)
+    if (selectedStatus.value) params.append('is_active', selectedStatus.value === 'active' ? 'true' : 'false')
+    
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${API_BASE_URL}/api/users?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-    ]
-    totalUsers.value = users.value.length
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch users')
+    }
+    
+    const result = await response.json()
+    users.value = result.data || []
+    
+    if (result.pagination) {
+      totalUsers.value = result.pagination.total
+    } else {
+      totalUsers.value = users.value.length
+    }
   } catch (error) {
     console.error('Error fetching users:', error)
+    alert('Failed to load users. Please try again.')
   } finally {
     loading.value = false
   }
 }
 
 const searchUsers = () => {
-  // TODO: Implement search functionality
+  currentPage.value = 1
   fetchUsers()
 }
 
@@ -473,40 +477,137 @@ const editUser = (user: User) => {
 }
 
 const toggleUserStatus = async (user: User) => {
+  const action = user.is_active ? 'deactivate' : 'activate'
+  if (!confirm(`Are you sure you want to ${action} ${user.first_name} ${user.last_name}?`)) {
+    return
+  }
+  
   try {
-    // TODO: Implement toggle status functionality
-    console.log('Toggling status for user:', user.id)
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${API_BASE_URL}/api/users/${user.id}/status`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        is_active: !user.is_active
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to update user status')
+    }
+    
+    // Update local state
     user.is_active = !user.is_active
+    alert(`User ${action}d successfully!`)
   } catch (error) {
     console.error('Error toggling user status:', error)
+    alert('Failed to update user status. Please try again.')
   }
 }
 
 const resetPassword = async (user: User) => {
-  if (confirm(`Reset password for ${user.first_name} ${user.last_name}?`)) {
-    try {
-      // TODO: Implement password reset functionality
-      console.log('Resetting password for user:', user.id)
-      alert('Password reset email sent!')
-    } catch (error) {
-      console.error('Error resetting password:', error)
+  if (!confirm(`Reset password for ${user.first_name} ${user.last_name}? A new password will be generated and displayed.`)) {
+    return
+  }
+  
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${API_BASE_URL}/api/users/${user.id}/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to reset password')
     }
+    
+    const result = await response.json()
+    
+    if (result.data?.newPassword) {
+      alert(`Password reset successful!\n\nNew password: ${result.data.newPassword}\n\nPlease copy and share this with the user securely.`)
+    } else {
+      alert('Password reset successful! The user will receive an email with instructions.')
+    }
+  } catch (error) {
+    console.error('Error resetting password:', error)
+    alert('Failed to reset password. Please try again.')
   }
 }
 
 const saveUser = async () => {
   try {
+    const token = localStorage.getItem('token')
+    
     if (showAddModal.value) {
-      // TODO: Implement add functionality
-      console.log('Adding user:', userForm.value)
+      // Create new user
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          first_name: userForm.value.first_name,
+          last_name: userForm.value.last_name,
+          email: userForm.value.email,
+          password: userForm.value.password,
+          role: userForm.value.role,
+          phone: userForm.value.phone || undefined,
+          address: userForm.value.address || undefined,
+          student_id: userForm.value.student_id || undefined,
+          employee_id: userForm.value.employee_id || undefined,
+          grade_level: userForm.value.grade_level || undefined,
+          department: userForm.value.department || undefined
+        })
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to create user')
+      }
+      
+      alert('User created successfully!')
     } else {
-      // TODO: Implement update functionality
-      console.log('Updating user:', userForm.value)
+      // Update existing user
+      const response = await fetch(`${API_BASE_URL}/api/users/${userForm.value.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          first_name: userForm.value.first_name,
+          last_name: userForm.value.last_name,
+          email: userForm.value.email,
+          role: userForm.value.role,
+          phone: userForm.value.phone || undefined,
+          address: userForm.value.address || undefined,
+          student_id: userForm.value.student_id || undefined,
+          employee_id: userForm.value.employee_id || undefined,
+          grade_level: userForm.value.grade_level || undefined,
+          department: userForm.value.department || undefined
+        })
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to update user')
+      }
+      
+      alert('User updated successfully!')
     }
+    
     closeModal()
     await fetchUsers()
   } catch (error) {
     console.error('Error saving user:', error)
+    alert(error instanceof Error ? error.message : 'Failed to save user. Please try again.')
   }
 }
 
@@ -532,7 +633,7 @@ const closeModal = () => {
 const changePage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
-    // TODO: Implement pagination
+    fetchUsers()
   }
 }
 
