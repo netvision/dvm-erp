@@ -27,7 +27,7 @@ const userSchemas = {
     phone: Joi.string().pattern(/^[0-9+\-\s()]+$/).optional(),
     address: Joi.string().max(255).optional(),
     student_id: Joi.string().when('role', { is: 'student', then: Joi.required() }),
-    faculty_id: Joi.string().when('role', { is: Joi.valid('teacher', 'librarian', 'admin'), then: Joi.required() }),
+    employee_id: Joi.string().when('role', { is: Joi.valid('teacher', 'librarian', 'admin'), then: Joi.required() }),
     grade_level: Joi.string().when('role', { is: 'student', then: Joi.optional() }),
     department: Joi.string().when('role', { is: Joi.valid('teacher', 'librarian', 'admin'), then: Joi.optional() })
   }),

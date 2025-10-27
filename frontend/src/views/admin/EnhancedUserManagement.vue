@@ -334,12 +334,17 @@
               <select
                 v-model="userForm.role"
                 required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                :disabled="editingUser && !authStore.isAdmin"
+                :class="[
+                  'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                  (editingUser && !authStore.isAdmin) ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
+                ]"
               >
                 <option value="student">Student</option>
                 <option value="librarian">Librarian</option>
                 <option value="admin">Admin</option>
               </select>
+              <p v-if="editingUser && !authStore.isAdmin" class="text-xs text-gray-500 mt-1">Only admins can change roles</p>
             </div>
             
             <div v-if="userForm.role === 'student'">
@@ -349,6 +354,56 @@
                 type="text"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+            
+            <div v-if="userForm.role === 'student'">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+              <input
+                v-model="userForm.grade_level"
+                type="text"
+                placeholder="e.g., Grade 10"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div v-if="userForm.role !== 'student'">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Employee ID <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="userForm.employee_id"
+                type="text"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div v-if="userForm.role !== 'student'">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+              <input
+                v-model="userForm.department"
+                type="text"
+                placeholder="e.g., Science, Library"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+              <input
+                v-model="userForm.phone"
+                type="tel"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+              <textarea
+                v-model="userForm.address"
+                rows="2"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              ></textarea>
             </div>
           </div>
           
@@ -527,6 +582,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 import {
   UsersIcon,
   AcademicCapIcon,
@@ -538,6 +594,9 @@ import {
   DocumentArrowDownIcon,
   XMarkIcon
 } from '@heroicons/vue/24/outline'
+
+// Auth store
+const authStore = useAuthStore()
 
 // Reactive data
 const users = ref<any[]>([])
@@ -828,8 +887,12 @@ const saveUser = async () => {
       // Update existing user (don't send email - it's not allowed to be changed)
       const updateData: any = {
         first_name: userForm.value.first_name,
-        last_name: userForm.value.last_name,
-        role: userForm.value.role
+        last_name: userForm.value.last_name
+      }
+      
+      // Only admins can change roles
+      if (authStore.isAdmin) {
+        updateData.role = userForm.value.role
       }
       
       // Only add optional fields if they have values
