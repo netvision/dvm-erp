@@ -588,98 +588,70 @@ const loadUsers = async () => {
   isLoading.value = true
   try {
     const response = await axios.get('/users')
-    users.value = response.data.data || []
+    
+    // Transform API data to match component structure
+    const apiUsers = response.data.data || []
+    users.value = apiUsers.map((user: any) => ({
+      id: user.id,
+      name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      role: user.role,
+      status: user.is_active ? 'active' : 'inactive', // Convert is_active to status
+      student_id: user.student_id || null,
+      employee_id: user.employee_id || null,
+      phone: user.phone || null,
+      address: user.address || null,
+      department: user.department || null,
+      grade_level: user.grade_level || null,
+      created_at: user.created_at,
+      last_login: user.last_login || user.updated_at,
+      is_active: user.is_active
+    }))
+    
     filteredUsers.value = [...users.value]
     
     // Calculate stats
     calculateUserStats()
     console.log('Successfully loaded', users.value.length, 'users from API')
   } catch (error: any) {
-    console.log('API call failed, using demo data for testing. Error:', error.message)
+    console.error('Failed to load users from API:', error.message)
     
-    // Fallback to demo data for testing
-    users.value = [
-      {
-        id: 1,
-        name: 'Admin User',
-        email: 'admin@school.edu',
-        role: 'admin',
-        status: 'active',
-        student_id: null,
-        created_at: new Date().toISOString(),
-        last_login: new Date().toISOString()
-      },
-      {
-        id: 2,
-        name: 'John Doe',
-        email: 'john.doe@student.edu',
-        role: 'student',
-        status: 'active',
-        student_id: 'STU001',
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        last_login: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        id: 3,
-        name: 'Jane Smith',
-        email: 'jane.smith@student.edu',
-        role: 'student',
-        status: 'active',
-        student_id: 'STU002',
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-        last_login: new Date(Date.now() - 7200000).toISOString()
-      },
-      {
-        id: 4,
-        name: 'Bob Wilson',
-        email: 'bob.wilson@library.edu',
-        role: 'librarian',
-        status: 'active',
-        student_id: null,
-        created_at: new Date(Date.now() - 2592000000).toISOString(),
-        last_login: new Date(Date.now() - 1800000).toISOString()
-      },
-      {
-        id: 5,
-        name: 'Alice Johnson',
-        email: 'alice.johnson@student.edu',
-        role: 'student',
-        status: 'suspended',
-        student_id: 'STU003',
-        created_at: new Date(Date.now() - 604800000).toISOString(),
-        last_login: new Date(Date.now() - 86400000).toISOString()
-      },
-      {
-        id: 6,
-        name: 'Michael Brown',
-        email: 'michael.brown@librarian.edu',
-        role: 'librarian',
-        status: 'active',
-        student_id: null,
-        created_at: new Date(Date.now() - 1209600000).toISOString(),
-        last_login: new Date(Date.now() - 900000).toISOString()
-      }
-    ]
-    filteredUsers.value = [...users.value]
-    calculateUserStats()
-    console.log('Demo data loaded:', users.value.length, 'users')
+    // Initialize empty array on error
+    users.value = []
+    filteredUsers.value = []
+    userStats.value = {
+      total: 0,
+      newThisMonth: 0,
+      activeStudents: 0,
+      staff: 0,
+      admins: 0,
+      librarians: 0,
+      onlineNow: 0
+    }
   } finally {
     isLoading.value = false
   }
 }
 
 const calculateUserStats = async () => {
+  // Safety check - ensure users array exists and has data
+  if (!users.value || !Array.isArray(users.value)) {
+    users.value = []
+  }
+  
   const now = new Date()
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   
-  // Calculate basic stats from users data
+  // Calculate basic stats from users data with safety checks
   const basicStats = {
     total: users.value.length,
-    newThisMonth: users.value.filter(user => new Date(user.created_at) >= thisMonth).length,
-    activeStudents: users.value.filter(user => user.role === 'student' && (user.status || 'active') === 'active').length,
-    staff: users.value.filter(user => user.role !== 'student').length,
-    admins: users.value.filter(user => user.role === 'admin').length,
-    librarians: users.value.filter(user => user.role === 'librarian').length,
+    newThisMonth: users.value.filter(user => user && user.created_at && new Date(user.created_at) >= thisMonth).length,
+    activeStudents: users.value.filter(user => user && user.role === 'student' && (user.status || 'active') === 'active').length,
+    staff: users.value.filter(user => user && user.role !== 'student').length,
+    admins: users.value.filter(user => user && user.role === 'admin').length,
+    librarians: users.value.filter(user => user && user.role === 'librarian').length,
     onlineNow: 0 // Will be updated from API or calculated
   }
   
@@ -702,7 +674,7 @@ const calculateUserStats = async () => {
     // - Day of week (fewer on weekends)
     // - Total active users (percentage online)
     
-    const activeUsers = users.value.filter(user => (user.status || 'active') === 'active').length
+    const activeUsers = users.value.filter(user => user && (user.status || 'active') === 'active').length
     const hour = now.getHours()
     const dayOfWeek = now.getDay() // 0 = Sunday, 1 = Monday, etc.
     
@@ -729,22 +701,31 @@ const calculateUserStats = async () => {
 }
 
 const searchUsers = () => {
+  // Safety check
+  if (!users.value || !Array.isArray(users.value)) {
+    users.value = []
+    filteredUsers.value = []
+    return
+  }
+  
   let result = [...users.value]
   
   if (searchQuery.value) {
     result = result.filter(user => 
-      user.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (user.student_id && user.student_id.toLowerCase().includes(searchQuery.value.toLowerCase()))
+      user && (
+        (user.name && user.name.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+        (user.email && user.email.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+        (user.student_id && user.student_id.toLowerCase().includes(searchQuery.value.toLowerCase()))
+      )
     )
   }
   
   if (selectedRole.value) {
-    result = result.filter(user => user.role === selectedRole.value)
+    result = result.filter(user => user && user.role === selectedRole.value)
   }
   
   if (selectedStatus.value) {
-    result = result.filter(user => (user.status || 'active') === selectedStatus.value)
+    result = result.filter(user => user && (user.status || 'active') === selectedStatus.value)
   }
   
   filteredUsers.value = result
