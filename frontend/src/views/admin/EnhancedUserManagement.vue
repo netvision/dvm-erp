@@ -895,17 +895,20 @@ const saveUser = async () => {
         updateData.role = userForm.value.role
       }
       
-      // Only add optional fields if they have values (and trim strings)
-      if (userForm.value.student_id?.trim()) updateData.student_id = userForm.value.student_id.trim()
-      if (userForm.value.employee_id?.trim()) updateData.employee_id = userForm.value.employee_id.trim()
+      // Role-specific fields
+      if (userForm.value.role === 'student') {
+        // Student-specific fields
+        if (userForm.value.student_id?.trim()) updateData.student_id = userForm.value.student_id.trim()
+        if (userForm.value.grade_level?.trim()) updateData.grade_level = userForm.value.grade_level.trim()
+      } else {
+        // Staff-specific fields (teacher, librarian, admin)
+        if (userForm.value.employee_id?.trim()) updateData.employee_id = userForm.value.employee_id.trim()
+        if (userForm.value.department?.trim()) updateData.department = userForm.value.department.trim()
+      }
+      
+      // Common optional fields
       if (userForm.value.phone?.trim()) updateData.phone = userForm.value.phone.trim()
       if (userForm.value.address?.trim()) updateData.address = userForm.value.address.trim()
-      if (userForm.value.department?.trim()) updateData.department = userForm.value.department.trim()
-      if (userForm.value.grade_level?.trim()) updateData.grade_level = userForm.value.grade_level.trim()
-      if (userForm.value.phone) updateData.phone = userForm.value.phone
-      if (userForm.value.address) updateData.address = userForm.value.address
-      if (userForm.value.department) updateData.department = userForm.value.department
-      if (userForm.value.grade_level) updateData.grade_level = userForm.value.grade_level
       
       const response = await axios.put(`/users/${editingUser.value.id}`, updateData)
       
@@ -932,13 +935,20 @@ const saveUser = async () => {
         role: userForm.value.role
       }
       
-      // Only add optional fields if they have values (and trim strings)
-      if (userForm.value.student_id?.trim()) createData.student_id = userForm.value.student_id.trim()
-      if (userForm.value.employee_id?.trim()) createData.employee_id = userForm.value.employee_id.trim()
+      // Role-specific fields
+      if (userForm.value.role === 'student') {
+        // Student-specific fields
+        if (userForm.value.student_id?.trim()) createData.student_id = userForm.value.student_id.trim()
+        if (userForm.value.grade_level?.trim()) createData.grade_level = userForm.value.grade_level.trim()
+      } else {
+        // Staff-specific fields (teacher, librarian, admin)
+        if (userForm.value.employee_id?.trim()) createData.employee_id = userForm.value.employee_id.trim()
+        if (userForm.value.department?.trim()) createData.department = userForm.value.department.trim()
+      }
+      
+      // Common optional fields
       if (userForm.value.phone?.trim()) createData.phone = userForm.value.phone.trim()
       if (userForm.value.address?.trim()) createData.address = userForm.value.address.trim()
-      if (userForm.value.department?.trim()) createData.department = userForm.value.department.trim()
-      if (userForm.value.grade_level?.trim()) createData.grade_level = userForm.value.grade_level.trim()
       
       console.log('Creating user with data:', createData)
       
