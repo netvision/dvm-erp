@@ -886,18 +886,22 @@ const saveUser = async () => {
     if (editingUser.value) {
       // Update existing user (don't send email - it's not allowed to be changed)
       const updateData: any = {
-        first_name: userForm.value.first_name,
-        last_name: userForm.value.last_name
+        first_name: userForm.value.first_name.trim(),
+        last_name: userForm.value.last_name.trim()
       }
       
       // Only admins can change roles
-      if (authStore.isAdmin) {
+      if (authStore.isAdmin && userForm.value.role) {
         updateData.role = userForm.value.role
       }
       
-      // Only add optional fields if they have values
-      if (userForm.value.student_id) updateData.student_id = userForm.value.student_id
-      if (userForm.value.employee_id) updateData.employee_id = userForm.value.employee_id
+      // Only add optional fields if they have values (and trim strings)
+      if (userForm.value.student_id?.trim()) updateData.student_id = userForm.value.student_id.trim()
+      if (userForm.value.employee_id?.trim()) updateData.employee_id = userForm.value.employee_id.trim()
+      if (userForm.value.phone?.trim()) updateData.phone = userForm.value.phone.trim()
+      if (userForm.value.address?.trim()) updateData.address = userForm.value.address.trim()
+      if (userForm.value.department?.trim()) updateData.department = userForm.value.department.trim()
+      if (userForm.value.grade_level?.trim()) updateData.grade_level = userForm.value.grade_level.trim()
       if (userForm.value.phone) updateData.phone = userForm.value.phone
       if (userForm.value.address) updateData.address = userForm.value.address
       if (userForm.value.department) updateData.department = userForm.value.department
@@ -921,20 +925,22 @@ const saveUser = async () => {
     } else {
       // Create new user - use /users endpoint (not /auth/register)
       const createData: any = {
-        first_name: userForm.value.first_name,
-        last_name: userForm.value.last_name,
-        email: userForm.value.email,
+        first_name: userForm.value.first_name.trim(),
+        last_name: userForm.value.last_name.trim(),
+        email: userForm.value.email.trim(),
         password: userForm.value.password,
         role: userForm.value.role
       }
       
-      // Only add optional fields if they have values
-      if (userForm.value.student_id) createData.student_id = userForm.value.student_id
-      if (userForm.value.employee_id) createData.employee_id = userForm.value.employee_id
-      if (userForm.value.phone) createData.phone = userForm.value.phone
-      if (userForm.value.address) createData.address = userForm.value.address
-      if (userForm.value.department) createData.department = userForm.value.department
-      if (userForm.value.grade_level) createData.grade_level = userForm.value.grade_level
+      // Only add optional fields if they have values (and trim strings)
+      if (userForm.value.student_id?.trim()) createData.student_id = userForm.value.student_id.trim()
+      if (userForm.value.employee_id?.trim()) createData.employee_id = userForm.value.employee_id.trim()
+      if (userForm.value.phone?.trim()) createData.phone = userForm.value.phone.trim()
+      if (userForm.value.address?.trim()) createData.address = userForm.value.address.trim()
+      if (userForm.value.department?.trim()) createData.department = userForm.value.department.trim()
+      if (userForm.value.grade_level?.trim()) createData.grade_level = userForm.value.grade_level.trim()
+      
+      console.log('Creating user with data:', createData)
       
       const response = await axios.post('/users', createData)
       const newUser = response.data.data || response.data.user
@@ -967,7 +973,19 @@ const saveUser = async () => {
     calculateUserStats()
   } catch (error: any) {
     console.error('Error saving user:', error)
-    const errorMsg = error.response?.data?.message || error.message || 'Failed to save user'
+    console.error('Error response:', error.response?.data)
+    
+    let errorMsg = 'Failed to save user'
+    
+    // Try to get the most specific error message
+    if (error.response?.data?.error) {
+      errorMsg = error.response.data.error
+    } else if (error.response?.data?.message) {
+      errorMsg = error.response.data.message
+    } else if (error.message) {
+      errorMsg = error.message
+    }
+    
     alert(`Error: ${errorMsg}`)
   } finally {
     isSubmitting.value = false
