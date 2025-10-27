@@ -759,7 +759,7 @@ class UserController {
         const activeUsersQuery = `
           SELECT COUNT(*) as count
           FROM users 
-          WHERE status = 'active'
+          WHERE is_active = true
         `
         const activeResult = await pool.query(activeUsersQuery)
         const activeCount = parseInt(activeResult.rows[0].count)
@@ -779,7 +779,7 @@ class UserController {
         SELECT id, first_name, last_name, email, role, last_login
         FROM users 
         WHERE last_login >= $1 
-        AND status = 'active'
+        AND is_active = true
         ORDER BY last_login DESC
       `
       
