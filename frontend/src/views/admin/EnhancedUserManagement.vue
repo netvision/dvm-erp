@@ -194,7 +194,7 @@
                     :class="getRoleBadgeClass(user.role)"
                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                   >
-                    {{ user.role.charAt(0).toUpperCase() + user.role.slice(1) }}
+                    {{ user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Unknown' }}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -401,7 +401,7 @@
                   :class="getRoleBadgeClass(viewingUser.role)"
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1"
                 >
-                  {{ viewingUser.role.charAt(0).toUpperCase() + viewingUser.role.slice(1) }}
+                  {{ viewingUser.role ? (viewingUser.role.charAt(0).toUpperCase() + viewingUser.role.slice(1)) : 'Unknown' }}
                 </span>
               </div>
             </div>
@@ -569,6 +569,11 @@ const userForm = ref({
   email: '',
   role: 'student',
   student_id: '',
+  employee_id: '',
+  phone: '',
+  address: '',
+  department: '',
+  grade_level: '',
   password: ''
 })
 
@@ -759,13 +764,18 @@ const viewUser = (user: any) => {
 
 const editUser = (user: any) => {
   editingUser.value = user
-  const nameParts = user.name.split(' ')
+  const nameParts = user.name ? user.name.split(' ') : []
   userForm.value = {
-    first_name: nameParts[0] || '',
-    last_name: nameParts.slice(1).join(' ') || '',
-    email: user.email,
-    role: user.role,
+    first_name: user.first_name || nameParts[0] || '',
+    last_name: user.last_name || nameParts.slice(1).join(' ') || '',
+    email: user.email || '',
+    role: user.role || 'student',
     student_id: user.student_id || '',
+    employee_id: user.employee_id || '',
+    phone: user.phone || '',
+    address: user.address || '',
+    department: user.department || '',
+    grade_level: user.grade_level || '',
     password: ''
   }
 }
@@ -811,19 +821,87 @@ const saveUser = async () => {
   try {
     if (editingUser.value) {
       // Update existing user
-      await axios.put(`/users/${editingUser.value.id}`, userForm.value)
-      Object.assign(editingUser.value, userForm.value)
+      const updateData: any = {
+        first_name: userForm.value.first_name,
+        last_name: userForm.value.last_name,
+        email: userForm.value.email,
+        role: userForm.value.role
+      }
+      
+      // Only add optional fields if they have values
+      if (userForm.value.student_id) updateData.student_id = userForm.value.student_id
+      if (userForm.value.employee_id) updateData.employee_id = userForm.value.employee_id
+      if (userForm.value.phone) updateData.phone = userForm.value.phone
+      if (userForm.value.address) updateData.address = userForm.value.address
+      if (userForm.value.department) updateData.department = userForm.value.department
+      if (userForm.value.grade_level) updateData.grade_level = userForm.value.grade_level
+      
+      const response = await axios.put(`/users/${editingUser.value.id}`, updateData)
+      
+      // Update local user data
+      const updatedUser = response.data.data || response.data.user
+      const index = users.value.findIndex(u => u.id === editingUser.value.id)
+      if (index !== -1) {
+        users.value[index] = {
+          ...users.value[index],
+          name: `${updatedUser.first_name} ${updatedUser.last_name}`,
+          ...updatedUser,
+          status: updatedUser.is_active ? 'active' : 'inactive'
+        }
+      }
+      
+      console.log('✅ User updated successfully')
     } else {
-      // Create new user
-      const response = await axios.post('/auth/register', userForm.value)
-      users.value.push(response.data.user)
+      // Create new user - use /users endpoint (not /auth/register)
+      const createData: any = {
+        first_name: userForm.value.first_name,
+        last_name: userForm.value.last_name,
+        email: userForm.value.email,
+        password: userForm.value.password,
+        role: userForm.value.role
+      }
+      
+      // Only add optional fields if they have values
+      if (userForm.value.student_id) createData.student_id = userForm.value.student_id
+      if (userForm.value.employee_id) createData.employee_id = userForm.value.employee_id
+      if (userForm.value.phone) createData.phone = userForm.value.phone
+      if (userForm.value.address) createData.address = userForm.value.address
+      if (userForm.value.department) createData.department = userForm.value.department
+      if (userForm.value.grade_level) createData.grade_level = userForm.value.grade_level
+      
+      const response = await axios.post('/users', createData)
+      const newUser = response.data.data || response.data.user
+      
+      // Add to local users array
+      users.value.push({
+        id: newUser.id,
+        name: `${newUser.first_name} ${newUser.last_name}`,
+        first_name: newUser.first_name,
+        last_name: newUser.last_name,
+        email: newUser.email,
+        role: newUser.role,
+        status: newUser.is_active ? 'active' : 'inactive',
+        student_id: newUser.student_id || null,
+        employee_id: newUser.employee_id || null,
+        phone: newUser.phone || null,
+        address: newUser.address || null,
+        department: newUser.department || null,
+        grade_level: newUser.grade_level || null,
+        created_at: newUser.created_at,
+        last_login: newUser.last_login,
+        is_active: newUser.is_active
+      })
+      
+      console.log('✅ User created successfully')
     }
     
     closeUserModal()
-    filterUsers()
+    searchUsers() // Re-apply filters
     calculateUserStats()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving user:', error)
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to save user'
+    alert(`Error: ${errorMsg}`)
   } finally {
     isSubmitting.value = false
   }
@@ -838,6 +916,11 @@ const closeUserModal = () => {
     email: '',
     role: 'student',
     student_id: '',
+    employee_id: '',
+    phone: '',
+    address: '',
+    department: '',
+    grade_level: '',
     password: ''
   }
 }
@@ -849,6 +932,7 @@ const exportUsers = () => {
 
 // Helper functions
 const getUserInitials = (name: string) => {
+  if (!name) return '??'
   return name.split(' ').map((n: string) => n.charAt(0)).join('').toUpperCase().slice(0, 2)
 }
 
