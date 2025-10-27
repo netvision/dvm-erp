@@ -40,10 +40,14 @@ const userSchemas = {
   update: Joi.object({
     first_name: Joi.string().min(2).max(50),
     last_name: Joi.string().min(2).max(50),
+    role: Joi.string().valid('student', 'teacher', 'librarian', 'admin'),
     phone: Joi.string().pattern(/^[0-9+\-\s()]+$/),
     address: Joi.string().max(255),
+    student_id: Joi.string(),
+    employee_id: Joi.string(),
     grade_level: Joi.string(),
-    department: Joi.string()
+    department: Joi.string(),
+    is_active: Joi.boolean()
   })
 };
 
