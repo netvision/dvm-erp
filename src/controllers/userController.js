@@ -289,7 +289,7 @@ class UserController {
         phone,
         address,
         student_id,
-        faculty_id,
+        employee_id,
         grade_level,
         department
       } = req.body;
@@ -313,7 +313,7 @@ class UserController {
         phone,
         address,
         student_id,
-        faculty_id,
+        employee_id,
         grade_level,
         department
       });
