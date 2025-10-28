@@ -251,63 +251,78 @@
         </div>
       </div>
 
-      <!-- Reservations Tab -->
-      <div v-show="activeTab === 'reservations'" class="space-y-6">
-        <!-- Reservations List -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Book</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reserved On</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expires On</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="reservation in reservations" :key="reservation.id">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">{{ reservation.user_name }}</div>
-                    <div class="text-sm text-gray-500">{{ reservation.user_student_id || reservation.user_email }}</div>
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="text-sm font-medium text-gray-900">{{ reservation.book_title }}</div>
-                    <div class="text-sm text-gray-500">{{ reservation.book_author }}</div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ formatDate(reservation.reservation_date) }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ formatDate(reservation.expiry_date) }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span :class="[
-                      'px-2 py-1 text-xs rounded-full',
-                      reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      reservation.status === 'fulfilled' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    ]">
-                      {{ reservation.status }}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                    <button v-if="reservation.status === 'pending' && reservation.available_copies > 0" 
-                            @click="fulfillReservation(reservation)"
-                            class="text-green-600 hover:text-green-900">
-                      Fulfill
-                    </button>
-                    <button v-if="reservation.status === 'pending'" 
-                            @click="cancelReservation(reservation)"
-                            class="text-red-600 hover:text-red-900">
-                      Cancel
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      <!-- Issue Book Tab -->
+      <div v-show="activeTab === 'issue'" class="space-y-6">
+        <div class="max-w-3xl mx-auto">
+          <div class="bg-white rounded-lg shadow-lg p-8">
+            <h3 class="text-2xl font-semibold mb-6 flex items-center">
+              <svg class="w-8 h-8 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Issue Book to Student
+            </h3>
+            
+            <form @submit.prevent="createBorrow" class="space-y-6">
+              <!-- Student Search -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Student ID or Email *</label>
+                <input v-model="borrowForm.student_search" required 
+                       @input="searchStudent"
+                       placeholder="Enter student ID or email" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg" />
+                <p class="mt-1 text-sm text-gray-500">Type to search for the student</p>
+              </div>
+              
+              <!-- Book Search -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Book ISBN or Title *</label>
+                <input v-model="borrowForm.book_search" required 
+                       @input="searchBook"
+                       placeholder="Scan ISBN barcode or enter book title" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg" />
+                <p class="mt-1 text-sm text-gray-500">
+                  <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
+                  Scan barcode or type book name
+                </p>
+              </div>
+              
+              <!-- Due Date -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+                <input v-model="borrowForm.due_date" type="date" required 
+                       :min="tomorrow"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg" />
+                <p class="mt-1 text-sm text-gray-500">Default: 14 days from today</p>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex space-x-4 pt-4">
+                <button type="submit" 
+                        class="flex-1 px-6 py-3 bg-green-600 text-white text-lg font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
+                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Issue Book
+                </button>
+                <button type="button" @click="resetBorrowForm" 
+                        class="px-6 py-3 bg-gray-200 text-gray-700 text-lg font-medium rounded-lg hover:bg-gray-300 transition-colors">
+                  Clear
+                </button>
+              </div>
+            </form>
+
+            <!-- Instructions -->
+            <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 class="font-medium text-blue-900 mb-2">📋 Quick Instructions:</h4>
+              <ul class="text-sm text-blue-800 space-y-1">
+                <li>1. Enter or scan the student's ID</li>
+                <li>2. Scan the book's ISBN barcode or search by title</li>
+                <li>3. Confirm the due date (default 14 days)</li>
+                <li>4. Click "Issue Book" to complete</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -500,15 +515,13 @@ export default {
     const loading = ref(false);
     const books = ref([]);
     const borrows = ref([]);
-    const reservations = ref([]);
     const pendingReturns = ref([]);
     
     const stats = reactive({
       totalBooks: 0,
       availableBooks: 0,
       borrowedBooks: 0,
-      overdueBooks: 0,
-      pendingReservations: 0
+      overdueBooks: 0
     });
     
     const filters = reactive({
@@ -546,7 +559,7 @@ export default {
     const borrowForm = reactive({
       student_search: '',
       book_search: '',
-      due_date: '',
+      due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       user_id: null,
       book_id: null
     });
@@ -566,20 +579,19 @@ export default {
         badgeClass: 'bg-indigo-100 text-indigo-800'
       },
       { 
+        id: 'issue', 
+        name: 'Issue Book',
+        badgeClass: 'bg-green-100 text-green-800'
+      },
+      { 
         id: 'borrows', 
         name: 'Active Borrows',
         badge: stats.borrowedBooks,
         badgeClass: 'bg-blue-100 text-blue-800'
       },
       { 
-        id: 'reservations', 
-        name: 'Reservations',
-        badge: stats.pendingReservations,
-        badgeClass: 'bg-yellow-100 text-yellow-800'
-      },
-      { 
         id: 'returns', 
-        name: 'Returns'
+        name: 'Returns Processing'
       }
     ]);
     
@@ -643,21 +655,6 @@ export default {
       }
     };
     
-    const loadReservations = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/api/reservations/all`, {
-          params: { limit: 100 }
-        });
-        
-        if (response.data.status === 'success') {
-          reservations.value = response.data.data.reservations;
-          stats.pendingReservations = reservations.value.filter(r => r.status === 'pending').length;
-        }
-      } catch (error) {
-        console.error('Error loading reservations:', error);
-      }
-    };
-    
     const saveBook = async () => {
       try {
         if (editingBook.value) {
@@ -716,39 +713,9 @@ export default {
         alert('Book returned successfully');
         loadBorrows();
         loadBooks();
-        loadReservations(); // Might need to fulfill a reservation
       } catch (error) {
         console.error('Error returning book:', error);
         alert(error.response?.data?.message || 'Failed to process return');
-      }
-    };
-    
-    const fulfillReservation = async (reservation) => {
-      if (!confirm(`Fulfill reservation for ${reservation.user_name}?`)) return;
-      
-      try {
-        await axios.patch(`${API_URL}/api/reservations/${reservation.id}/fulfill`);
-        alert('Reservation fulfilled. Please issue the book to the student.');
-        loadReservations();
-      } catch (error) {
-        console.error('Error fulfilling reservation:', error);
-        alert(error.response?.data?.message || 'Failed to fulfill reservation');
-      }
-    };
-    
-    const cancelReservation = async (reservation) => {
-      const reason = prompt('Reason for cancellation:');
-      if (!reason) return;
-      
-      try {
-        await axios.delete(`${API_URL}/api/reservations/${reservation.id}/cancel`, {
-          data: { reason }
-        });
-        alert('Reservation cancelled');
-        loadReservations();
-      } catch (error) {
-        console.error('Error cancelling reservation:', error);
-        alert(error.response?.data?.message || 'Failed to cancel reservation');
       }
     };
     
@@ -756,13 +723,22 @@ export default {
       try {
         // Implementation would search for student and book first
         // Then create the borrow record
-        alert('Borrow created successfully');
-        showNewBorrowModal.value = false;
+        alert('Book issued successfully');
+        resetBorrowForm();
         loadBorrows();
+        loadBooks();
       } catch (error) {
-        console.error('Error creating borrow:', error);
-        alert(error.response?.data?.message || 'Failed to create borrow');
+        console.error('Error issuing book:', error);
+        alert(error.response?.data?.message || 'Failed to issue book');
       }
+    };
+    
+    const resetBorrowForm = () => {
+      borrowForm.student_search = '';
+      borrowForm.book_search = '';
+      borrowForm.due_date = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      borrowForm.user_id = null;
+      borrowForm.book_id = null;
     };
     
     const searchStudent = () => {
@@ -808,7 +784,6 @@ export default {
     onMounted(() => {
       loadBooks();
       loadBorrows();
-      loadReservations();
     });
     
     return {
@@ -816,7 +791,6 @@ export default {
       loading,
       books,
       borrows,
-      reservations,
       pendingReturns,
       stats,
       filters,
@@ -836,9 +810,8 @@ export default {
       deleteBook,
       closeBookModal,
       returnBook,
-      fulfillReservation,
-      cancelReservation,
       createBorrow,
+      resetBorrowForm,
       searchStudent,
       searchBook,
       searchBorrow,

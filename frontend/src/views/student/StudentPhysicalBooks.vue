@@ -13,7 +13,7 @@
           <div class="text-right">
             <div class="text-3xl font-bold">{{ myStats.borrowed }}</div>
             <div class="text-sm text-blue-200">Books Borrowed</div>
-            <div class="text-xs text-blue-300 mt-1">{{ myStats.reservations }} reservations</div>
+            <div class="text-xs text-blue-300 mt-1">Visit library to borrow more</div>
           </div>
         </div>
       </div>
@@ -129,24 +129,13 @@
 
               <!-- Actions -->
               <div class="space-y-2">
-                <button v-if="book.available_copies > 0" 
-                        @click="viewBookDetails(book)"
+                <button @click="viewBookDetails(book)"
                         class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  View Details
+                  View Details & Location
                 </button>
-                <button v-else 
-                        @click="reserveBook(book)"
-                        :disabled="isBookReserved(book.id) || myStats.borrowed >= 5"
-                        :class="[
-                          'w-full px-4 py-2 rounded-lg transition-colors',
-                          isBookReserved(book.id) 
-                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
-                            : myStats.borrowed >= 5
-                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                            : 'bg-yellow-500 text-white hover:bg-yellow-600'
-                        ]">
-                  {{ isBookReserved(book.id) ? 'Already Reserved' : 'Reserve Book' }}
-                </button>
+                <div v-if="book.available_copies === 0" class="text-center text-sm text-gray-500 mt-2">
+                  Currently unavailable
+                </div>
               </div>
             </div>
           </div>
@@ -185,6 +174,10 @@
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <p class="mt-4 text-gray-500">You haven't borrowed any books yet</p>
+          <button @click="activeTab = 'browse'" 
+                  class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Browse Books
+          </button>
         </div>
 
         <div v-else class="space-y-4">
@@ -240,68 +233,6 @@
               <p class="text-sm text-yellow-800">
                 🔔 This book is due soon. Please plan to return it by {{ formatDate(borrow.due_date) }}.
               </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- My Reservations Tab -->
-      <div v-show="activeTab === 'reservations'" class="space-y-6">
-        <div v-if="myReservations.length === 0" class="text-center py-12 bg-white rounded-lg">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-          </svg>
-          <p class="mt-4 text-gray-500">You don't have any active reservations</p>
-          <button @click="activeTab = 'browse'" 
-                  class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Browse Books
-          </button>
-        </div>
-
-        <div v-else class="space-y-4">
-          <div v-for="reservation in myReservations" :key="reservation.id" 
-               class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-            <div class="flex justify-between items-start">
-              <div class="flex-1">
-                <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ reservation.book_title }}</h3>
-                <p class="text-sm text-gray-600 mb-3">by {{ reservation.book_author }}</p>
-                
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span class="text-gray-500">Reserved:</span>
-                    <span class="ml-2 font-medium">{{ formatDate(reservation.reservation_date) }}</span>
-                  </div>
-                  <div>
-                    <span class="text-gray-500">Expires:</span>
-                    <span class="ml-2 font-medium">{{ formatDate(reservation.expiry_date) }}</span>
-                  </div>
-                  <div v-if="reservation.available_copies > 0" class="col-span-2">
-                    <span class="text-green-600 font-medium">✓ Book is now available! Visit library to collect.</span>
-                  </div>
-                </div>
-
-                <div v-if="reservation.notes" class="mt-3 text-sm text-gray-600">
-                  <span class="font-medium">Note:</span> {{ reservation.notes }}
-                </div>
-              </div>
-              
-              <div class="ml-4 flex flex-col space-y-2">
-                <span :class="[
-                  'px-3 py-1 text-sm rounded-full text-center',
-                  reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  reservation.status === 'fulfilled' ? 'bg-green-100 text-green-800' :
-                  'bg-gray-100 text-gray-800'
-                ]">
-                  {{ reservation.status }}
-                </span>
-                
-                <button v-if="reservation.status === 'pending'" 
-                        @click="cancelReservation(reservation)"
-                        class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">
-                  Cancel
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -384,14 +315,26 @@
               </div>
             </div>
             
-            <div class="text-sm text-gray-600 bg-yellow-50 p-4 rounded-lg">
-              <p class="font-medium mb-2">📍 How to get this book:</p>
-              <ol class="list-decimal list-inside space-y-1">
-                <li>Visit the library</li>
-                <li>Find the book at <span class="font-medium text-blue-600">{{ selectedBook.location }}</span></li>
-                <li>Show this on your phone or tell the librarian the book title</li>
-                <li>The librarian will issue the book to you</li>
+            <div class="text-sm text-gray-600 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <p class="font-medium mb-2 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                How to borrow this book:
+              </p>
+              <ol class="list-decimal list-inside space-y-2 ml-2">
+                <li>Visit the school library during library hours</li>
+                <li>Tell the librarian: "<span class="font-medium text-blue-600">{{ selectedBook.title }}</span>"</li>
+                <li>Or show them this location: <span class="font-medium text-blue-600">{{ selectedBook.location }}</span></li>
+                <li>The librarian will scan the book and issue it to you</li>
+                <li>Return the book within <span class="font-medium">14 days</span> to avoid fines</li>
               </ol>
+              <div class="mt-3 pt-3 border-t border-yellow-300">
+                <p class="text-xs text-yellow-800">
+                  📚 Maximum 3 books can be borrowed at a time<br>
+                  ⏰ Late returns: ₹5 per day fine
+                </p>
+              </div>
             </div>
             
             <button @click="selectedBook = null" 
@@ -422,12 +365,10 @@ export default {
     const loading = ref(false);
     const books = ref([]);
     const borrowedBooks = ref([]);
-    const myReservations = ref([]);
     const selectedBook = ref(null);
     
     const myStats = reactive({
       borrowed: 0,
-      reservations: 0,
       overdue: 0
     });
     
@@ -458,12 +399,6 @@ export default {
         name: 'My Borrowed Books',
         badge: myStats.borrowed,
         badgeClass: myStats.overdue > 0 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
-      },
-      { 
-        id: 'reservations', 
-        name: 'My Reservations',
-        badge: myStats.reservations,
-        badgeClass: 'bg-yellow-100 text-yellow-800'
       }
     ]);
     
@@ -525,64 +460,8 @@ export default {
       }
     };
     
-    const loadMyReservations = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/api/reservations/my-reservations`);
-        
-        if (response.data.status === 'success') {
-          myReservations.value = response.data.data.reservations;
-          myStats.reservations = myReservations.value.filter(r => r.status === 'pending').length;
-        }
-      } catch (error) {
-        console.error('Error loading reservations:', error);
-      }
-    };
-    
-    const reserveBook = async (book) => {
-      if (myStats.borrowed >= 5) {
-        alert('You have reached the maximum limit of 5 borrowed/reserved books.');
-        return;
-      }
-      
-      const notes = prompt(`Reserve "${book.title}"?\n\nOptional note (e.g., when you need it):`);
-      if (notes === null) return; // User cancelled
-      
-      try {
-        await axios.post(`${API_URL}/api/reservations`, {
-          book_id: book.id,
-          notes: notes || undefined
-        });
-        
-        alert('Book reserved successfully! You will be notified when it becomes available.');
-        await loadMyReservations();
-        activeTab.value = 'reservations';
-      } catch (error) {
-        console.error('Error reserving book:', error);
-        alert(error.response?.data?.message || 'Failed to reserve book');
-      }
-    };
-    
-    const cancelReservation = async (reservation) => {
-      if (!confirm(`Cancel reservation for "${reservation.book_title}"?`)) return;
-      
-      try {
-        await axios.delete(`${API_URL}/api/reservations/${reservation.id}/cancel`);
-        alert('Reservation cancelled');
-        await loadMyReservations();
-      } catch (error) {
-        console.error('Error cancelling reservation:', error);
-        alert(error.response?.data?.message || 'Failed to cancel reservation');
-      }
-    };
-    
     const viewBookDetails = (book) => {
       selectedBook.value = book;
-    };
-    
-    const isBookReserved = (bookId) => {
-      return myReservations.value.some(r => 
-        r.book_id === bookId && r.status === 'pending'
-      );
     };
     
     const changePage = (page) => {
@@ -613,7 +492,6 @@ export default {
     onMounted(() => {
       loadBooks();
       loadBorrowedBooks();
-      loadMyReservations();
     });
     
     return {
@@ -621,7 +499,6 @@ export default {
       loading,
       books,
       borrowedBooks,
-      myReservations,
       selectedBook,
       myStats,
       filters,
@@ -630,10 +507,7 @@ export default {
       genres,
       paginationButtons,
       loadBooks,
-      reserveBook,
-      cancelReservation,
       viewBookDetails,
-      isBookReserved,
       changePage,
       formatDate,
       isOverdue,
