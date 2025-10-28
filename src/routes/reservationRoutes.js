@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const ReservationController = require('../controllers/reservationController');
-const { authenticate } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const { authorizeRoles } = require('../middleware/authorization');
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticateToken);
 
 // Student routes - can create, view own, and cancel own reservations
 router.post('/', ReservationController.createReservation);

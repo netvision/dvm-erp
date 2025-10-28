@@ -49,6 +49,12 @@ const routes = [
     component: () => import('@/views/student/StudentBookmarks.vue'),
     meta: { requiresAuth: true, role: 'student' }
   },
+  {
+    path: '/student/physical-library',
+    name: 'student-physical-library',
+    component: () => import('@/views/student/StudentPhysicalBooks.vue'),
+    meta: { requiresAuth: true, role: 'student' }
+  },
   
   // Profile route (available to all authenticated users)
   {
@@ -98,6 +104,12 @@ const routes = [
     path: '/admin/borrowing',
     name: 'admin-borrowing',
     component: () => import('@/views/admin/BorrowingManagement.vue'),
+    meta: { requiresAuth: true, role: ['admin', 'librarian'] }
+  },
+  {
+    path: '/admin/physical-library',
+    name: 'admin-physical-library',
+    component: () => import('@/views/admin/PhysicalLibraryManagement.vue'),
     meta: { requiresAuth: true, role: ['admin', 'librarian'] }
   },
   {

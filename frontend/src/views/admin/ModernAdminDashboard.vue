@@ -613,12 +613,12 @@ const loadDashboardData = async () => {
 }
 
 // Quick action methods
-const manageBooks = () => router.push('/admin/books')
+const manageBooks = () => router.push('/admin/physical-library')
 const manageDigital = () => router.push('/admin/digital-library')
 const manageMedia = () => router.push('/admin/media-library')
-const manageBorrowing = () => router.push('/admin/borrowing')
-const manageReservations = () => router.push('/admin/borrowing') // Navigate to borrowing management
-const manageFines = () => router.push('/admin/borrowing') // Fines are part of borrowing management
+const manageBorrowing = () => router.push('/admin/physical-library') // Physical library includes borrowing
+const manageReservations = () => router.push('/admin/physical-library') // Physical library includes reservations
+const manageFines = () => router.push('/admin/physical-library') // Fines are part of borrowing management
 
 const useSmartSearch = () => router.push('/admin/digital-library') // Navigate to digital library for smart search
 const getRecommendations = () => { showAIChat.value = true } // Show AI chat for recommendations

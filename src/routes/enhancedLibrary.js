@@ -205,7 +205,7 @@ router.get('/fines/summary', authenticateToken, fineController.getFineSummary);
 router.get('/reservations', authenticateToken, reservationController.getUserReservations);
 router.get('/reservations/all', authenticateToken, requireRole(['admin', 'librarian']), reservationController.getAllReservations);
 router.post('/reservations', authenticateToken, reservationController.createReservation);
-router.put('/reservations/:id', authenticateToken, reservationController.updateReservation);
+// router.put('/reservations/:id', authenticateToken, reservationController.updateReservation); // Not implemented yet
 router.delete('/reservations/:id', authenticateToken, reservationController.cancelReservation);
 router.post('/reservations/:id/fulfill', authenticateToken, requireRole(['admin', 'librarian']), reservationController.fulfillReservation);
 
