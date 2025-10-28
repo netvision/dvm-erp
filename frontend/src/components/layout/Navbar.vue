@@ -71,7 +71,7 @@
                   <MenuItems class="absolute left-0 z-10 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <MenuItem v-slot="{ active }">
                       <router-link
-                        to="/admin/books"
+                        to="/admin/physical-library"
                         :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']"
                       >
                         Physical Books
@@ -250,7 +250,7 @@
             Dashboard
           </router-link>
           <router-link
-            to="/admin/books"
+            to="/admin/physical-library"
             class="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-blue-600 hover:bg-gray-50"
             @click="mobileMenuOpen = false"
           >

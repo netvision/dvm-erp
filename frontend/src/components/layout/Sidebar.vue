@@ -81,11 +81,11 @@
               Resource Management
             </h3>
             <router-link
-              to="/admin/books"
+              to="/admin/physical-library"
               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-              :class="isActive('/admin/books') ? activeClasses : inactiveClasses"
+              :class="isActive('/admin/physical-library') ? activeClasses : inactiveClasses"
             >
-              <BookOpenIcon class="mr-3 h-5 w-5" :class="isActive('/admin/books') ? 'text-blue-500' : 'text-gray-400'" />
+              <BookOpenIcon class="mr-3 h-5 w-5" :class="isActive('/admin/physical-library') ? 'text-blue-500' : 'text-gray-400'" />
               Physical Books
             </router-link>
             <router-link
