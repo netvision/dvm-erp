@@ -15,6 +15,7 @@ const bookRoutes = require('./routes/bookRoutes');
 const borrowRoutes = require('./routes/borrowRoutes');
 const bookmarkRoutes = require('./routes/bookmarkRoutes');
 const mediaRoutes = require('./routes/mediaRoutes');
+const reservationRoutes = require('./routes/reservationRoutes');
 const setupRoutes = require('./routes/setup');
 
 // Import enhanced library routes
@@ -115,6 +116,7 @@ app.use('/api/books', bookRoutes);
 app.use('/api/borrow', authenticateToken, borrowRoutes);
 app.use('/api/bookmarks', authenticateToken, bookmarkRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/reservations', reservationRoutes);
 app.use('/api/resources', authenticateToken, require('./routes/resourceRoutes'));
 app.use('/api/setup', setupRoutes);
 
