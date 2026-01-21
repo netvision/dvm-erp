@@ -26,10 +26,71 @@ async function query(text, params) {
 }
 
 async function up() {
-  console.log('Adding NCERT ebooks to media table...');
+  console.log('Checking if media table exists...');
   
   try {
-    // Insert NCERT ebooks with ON CONFLICT DO NOTHING to make it idempotent
+    // Check if media table exists
+    const tableCheck = await query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'media'
+      );
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      console.log('Creating media table...');
+      
+      // Create media table
+      await query(`
+        CREATE TABLE media (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          type VARCHAR(20) NOT NULL CHECK (type IN ('dvd', 'cd', 'digital', 'audiobook', 'ebook')),
+          format VARCHAR(50),
+          duration INTEGER,
+          file_size BIGINT,
+          description TEXT,
+          total_copies INTEGER NOT NULL DEFAULT 1 CHECK (total_copies >= 0),
+          available_copies INTEGER NOT NULL DEFAULT 1 CHECK (available_copies >= 0),
+          location VARCHAR(100),
+          access_url TEXT,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT check_media_available_copies CHECK (available_copies <= total_copies)
+        );
+      `);
+      
+      // Create indexes
+      await query(`
+        CREATE INDEX IF NOT EXISTS idx_media_title ON media(title);
+        CREATE INDEX IF NOT EXISTS idx_media_type ON media(type);
+        CREATE INDEX IF NOT EXISTS idx_media_is_active ON media(is_active);
+        CREATE INDEX IF NOT EXISTS idx_media_available_copies ON media(available_copies);
+      `);
+      
+      console.log('✅ Media table created successfully!');
+    } else {
+      console.log('✅ Media table already exists');
+    }
+    
+    console.log('Adding NCERT ebooks to media table...');
+    
+    // Check if NCERT ebooks already exist
+    const existingCount = await query(`
+      SELECT COUNT(*) as count 
+      FROM media 
+      WHERE type = 'ebook' AND title LIKE 'NCERT%'
+    `);
+    
+    if (existingCount.rows[0].count > 0) {
+      console.log(`⚠️  Found ${existingCount.rows[0].count} existing NCERT ebooks. Skipping insertion.`);
+      console.log('✅ Migration completed (already applied)!');
+      return;
+    }
+    
+    // Insert NCERT ebooks
     await query(`
       INSERT INTO media (title, type, format, duration, description, total_copies, available_copies, location, access_url) VALUES
       ('NCERT Mathematics Class 10', 'ebook', 'PDF', NULL, 'NCERT Mathematics textbook for Class 10 - Complete curriculum covering Real Numbers, Polynomials, Linear Equations, Quadratic Equations, Arithmetic Progressions, Triangles, Coordinate Geometry, Trigonometry, and Statistics.', 1, 1, 'Digital Library', 'https://ncert.nic.in/textbook.php?jemh1=0-8'),
@@ -48,7 +109,6 @@ async function up() {
       ('NCERT Hindi Kshitij Class 10', 'ebook', 'PDF', NULL, 'NCERT Hindi Kshitij textbook for Class 10 - Collection of Hindi literature including poetry and prose by renowned Hindi authors.', 1, 1, 'Digital Library', 'https://ncert.nic.in/textbook.php?jhhn1=0-17'),
       ('NCERT Computer Science Class 11', 'ebook', 'PDF', NULL, 'NCERT Computer Science textbook for Class 11 - Computer System Organization, Computational Thinking and Programming, Introduction to Python, Data Handling, and Society Law and Ethics.', 1, 1, 'Digital Library', 'https://ncert.nic.in/textbook.php?kecs1=0-12'),
       ('NCERT Computer Science Class 12', 'ebook', 'PDF', NULL, 'NCERT Computer Science textbook for Class 12 - Computational Thinking and Programming-2, Computer Networks, Database Management, Boolean Logic, and Society Law and Ethics - Cyber Safety.', 1, 1, 'Digital Library', 'https://ncert.nic.in/textbook.php?lecs1=0-13')
-      ON CONFLICT (title) DO NOTHING
     `);
 
     // Verify the ebooks were added
