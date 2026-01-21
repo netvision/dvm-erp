@@ -28,6 +28,7 @@ echo "Generated Password: $DB_PASSWORD"
 echo "PostgreSQL Admin: $POSTGRES_ADMIN_USER"
 echo ""
 
+
 # Function to run SQL as postgres admin
 run_sql_as_admin() {
     sudo -u $POSTGRES_ADMIN_USER psql -c "$1"
